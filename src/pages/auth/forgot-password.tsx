@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { BookOpen, Loader2, ArrowLeft } from "lucide-react"
+import { authApi, ApiException } from "@/lib/api"
 
 const forgotPasswordSchema = z.object({
     email: z.string().email("Invalid email address"),
@@ -32,11 +33,16 @@ export function ForgotPasswordPage() {
         setIsLoading(true)
         setError(null)
         try {
-            // Simulate API call
-            await new Promise((resolve) => setTimeout(resolve, 1000))
+            // The backend always returns 200 to prevent email enumeration.
+            await authApi.forgotPassword(data.email)
             setIsSuccess(true)
         } catch (err) {
-            setError("An error occurred. Please try again.")
+            // The API shouldn't 4xx here, but handle defensively.
+            if (err instanceof ApiException) {
+                setError(err.message)
+            } else {
+                setError("A network error occurred. Please try again.")
+            }
         } finally {
             setIsLoading(false)
         }

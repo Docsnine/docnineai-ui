@@ -7,14 +7,15 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { BookOpen, Loader2 } from "lucide-react"
+import { authApi, ApiException } from "@/lib/api"
+import { Loader2 } from "lucide-react"
 import BackgroundGrid from "@/components/ui/background-grid"
 import TopHeader from "@/components/header"
 
 const signupSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
+  name: z.string().min(2, "Name must be at least 2 characters").max(80, "Name must be at most 80 characters"),
   email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
 })
 
 type SignupFormValues = z.infer<typeof signupSchema>
@@ -36,12 +37,21 @@ export function SignupPage() {
     setIsLoading(true)
     setError(null)
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-      // Redirect to verify email
+      await authApi.signup({ name: data.name, email: data.email, password: data.password })
+      // Redirect to the "check your email" page after successful signup.
       navigate("/verify")
     } catch (err) {
-      setError("An error occurred during signup.")
+      if (err instanceof ApiException) {
+        if (err.code === "EMAIL_ALREADY_EXISTS" || err.status === 409) {
+          setError("An account with this email already exists. Try logging in.")
+        } else if (err.code === "VALIDATION_ERROR" && err.fields?.length) {
+          setError(err.fields.map((f) => f.message).join(". "))
+        } else {
+          setError(err.message)
+        }
+      } else {
+        setError("A network error occurred. Is the server running?")
+      }
     } finally {
       setIsLoading(false)
     }

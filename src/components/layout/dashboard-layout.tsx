@@ -1,14 +1,16 @@
-import { Link, Outlet, useLocation } from "react-router-dom"
-import { BookOpen, Github, Search, Plus, LayoutDashboard, FolderKanban, User, Settings, LogOut } from "lucide-react"
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
+import { BookOpen, Github, Search, LayoutDashboard, FolderKanban, User, Settings, LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuthStore } from "@/store/auth"
+import { authApi } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/theme-toggle"
 
 export function DashboardLayout() {
   const location = useLocation()
-  const logout = useAuthStore((state) => state.logout)
+  const navigate = useNavigate()
+  const { user, clearAuth } = useAuthStore()
 
   const navLinks = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -16,6 +18,17 @@ export function DashboardLayout() {
     { name: "Profile", href: "/profile", icon: User },
     { name: "Settings", href: "/settings", icon: Settings },
   ]
+
+  const handleLogout = async () => {
+    try {
+      await authApi.logout()
+    } catch {
+      // Even if the server call fails, clear local state and redirect
+    } finally {
+      clearAuth()
+      navigate("/login", { replace: true })
+    }
+  }
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -47,14 +60,22 @@ export function DashboardLayout() {
                 className="w-full bg-muted/50 pl-9 border-transparent focus-visible:border-primary"
               />
             </div>
+
+            {/* User indicator */}
+            {user && (
+              <span className="hidden md:block text-sm text-muted-foreground max-w-[150px] truncate" title={user.email}>
+                {user.name}
+              </span>
+            )}
+
             <ThemeToggle />
-            <Button variant="ghost" size="icon" onClick={logout} title="Logout">
+            <Button variant="ghost" size="icon" onClick={handleLogout} title="Logout">
               <LogOut className="h-4 w-4 text-muted-foreground" />
             </Button>
           </div>
         </div>
 
-        {/* Bottom Navbar (Sub-nav) */}
+        {/* Sub-nav */}
         <div className="flex h-12 items-center justify-between px-6 border-t border-border/50 bg-background/50 backdrop-blur-sm">
           <nav className="flex items-center gap-6">
             {navLinks.map((link) => {

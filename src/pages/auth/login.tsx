@@ -8,20 +8,21 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuthStore } from "@/store/auth"
-import { BookOpen, Loader2 } from "lucide-react"
+import { authApi, ApiException } from "@/lib/api"
+import { Loader2 } from "lucide-react"
 import BackgroundGrid from "@/components/ui/background-grid"
 import TopHeader from "@/components/header"
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(8, "Password must be at least 8 characters"),
 })
 
 type LoginFormValues = z.infer<typeof loginSchema>
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const login = useAuthStore((state) => state.login)
+  const setTokens = useAuthStore((state) => state.setTokens)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -37,17 +38,21 @@ export function LoginPage() {
     setIsLoading(true)
     setError(null)
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      if (data.email === "test@example.com" && data.password === "password") {
-        login({ id: "1", name: "Test User", email: data.email })
-        navigate("/dashboard")
-      } else {
-        setError("Invalid credentials. Try test@example.com / password")
-      }
+      const result = await authApi.login({ email: data.email, password: data.password })
+      setTokens(result.user, result.accessToken)
+      navigate("/dashboard")
     } catch (err) {
-      setError("An error occurred during login.")
+      if (err instanceof ApiException) {
+        if (err.code === "INVALID_CREDENTIALS") {
+          setError("Incorrect email or password. Please try again.")
+        } else if (err.code === "EMAIL_NOT_VERIFIED") {
+          setError("Please verify your email before logging in. Check your inbox.")
+        } else {
+          setError(err.message)
+        }
+      } else {
+        setError("A network error occurred. Is the server running?")
+      }
     } finally {
       setIsLoading(false)
     }
@@ -64,7 +69,7 @@ export function LoginPage() {
       <div className="absolute top-[40%] left-[50%] translate-x-[-50%] translate-y-[-50%] w-[40%] h-[30%] rounded-full bg-primary/20 blur-[100px] pointer-events-none z-0" />
 
       <TopHeader />
-      
+
       <div className="flex flex-col items-center justify-center p-4 z-10 mt-10">
         <Card className="w-full max-w-md bg-background/80 backdrop-blur-md">
           <CardHeader className="space-y-1 text-center">

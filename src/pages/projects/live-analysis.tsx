@@ -1,10 +1,22 @@
-import { useState, useEffect, useRef } from "react"
-import { useParams, Link } from "react-router-dom"
+import { useState, useEffect, useRef, useCallback } from "react"
+import { useParams, Link, useNavigate } from "react-router-dom"
 import { useProjectStore } from "@/store/projects"
+import { getAccessToken, API_BASE } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ArrowLeft, Play, Pause, AlertCircle, CheckCircle2, Info, Loader2, RefreshCw, Terminal } from "lucide-react"
+import {
+  ArrowLeft,
+  Play,
+  Pause,
+  AlertCircle,
+  CheckCircle2,
+  Info,
+  Loader2,
+  RefreshCw,
+  Terminal,
+} from "lucide-react"
+import { fetchEventSource } from "@microsoft/fetch-event-source"
 import { cn } from "@/lib/utils"
 
 type LogSeverity = "info" | "warning" | "error" | "success"
@@ -16,77 +28,149 @@ interface LogEntry {
   severity: LogSeverity
 }
 
+/** Map a backend pipeline event to a UI severity level. */
+function eventToSeverity(step: string, status?: string): LogSeverity {
+  if (step === "done") return "success"
+  if (step === "error") return "error"
+  if (status === "error") return "error"
+  if (status === "warning") return "warning"
+  if (step === "security") return "warning"
+  return "info"
+}
+
+/** Derive a human-readable message from a pipeline event. */
+function eventToMessage(event: Record<string, any>): string {
+  if (event.step === "done") return "✅ Documentation pipeline completed successfully."
+  if (event.step === "error") return `❌ Pipeline error: ${event.msg ?? event.detail ?? "Unknown error"}`
+  const parts: string[] = []
+  if (event.step) parts.push(`[${event.step}]`)
+  if (event.msg) parts.push(event.msg)
+  if (event.detail) parts.push(event.detail)
+  return parts.join(" — ") || "Processing…"
+}
+
 export function LiveAnalysisPage() {
   const { id } = useParams<{ id: string }>()
-  const project = useProjectStore(state => state.projects.find(p => p.id === id))
-  const updateProjectStatus = useProjectStore(state => state.updateProjectStatus)
-  
+  const navigate = useNavigate()
+  const { getProject, updateLocalProject } = useProjectStore()
+
+  const [projectName, setProjectName] = useState<string>("")
   const [logs, setLogs] = useState<LogEntry[]>([])
   const [isPaused, setIsPaused] = useState(false)
   const [connectionState, setConnectionState] = useState<"connecting" | "connected" | "reconnecting" | "disconnected">("connecting")
+  const [pipelineStatus, setPipelineStatus] = useState<"running" | "done" | "error">("running")
+  const [loadError, setLoadError] = useState<string | null>(null)
+
   const logsEndRef = useRef<HTMLDivElement>(null)
-  
-  // Auto-scroll to bottom
+  const abortRef = useRef<AbortController | null>(null)
+  const pausedRef = useRef(isPaused)
+
+  // Keep a ref in-sync with state for use inside the SSE callback
+  useEffect(() => { pausedRef.current = isPaused }, [isPaused])
+
+  // Auto-scroll when not paused
   useEffect(() => {
     if (!isPaused) {
       logsEndRef.current?.scrollIntoView({ behavior: "smooth" })
     }
   }, [logs, isPaused])
 
+  // Load project name and start SSE stream
   useEffect(() => {
-    if (!project) return
+    if (!id) return
 
-    // In a real app, this would be:
-    // const eventSource = new EventSource(`/api/projects/${id}/analysis/stream`)
-    
-    // Simulating SSE for the design prototype
-    let eventIndex = 0
-    const mockEvents: Omit<LogEntry, 'id' | 'timestamp'>[] = [
-      { message: "Initializing analysis engine...", severity: "info" },
-      { message: "Cloning repository...", severity: "info" },
-      { message: "Repository cloned successfully.", severity: "success" },
-      { message: "Scanning for dependencies...", severity: "info" },
-      { message: "Found package.json. Analyzing Node.js project.", severity: "info" },
-      { message: "Warning: Outdated dependency 'lodash' found.", severity: "warning" },
-      { message: "Parsing source files...", severity: "info" },
-      { message: "Analyzing authentication flow...", severity: "info" },
-      { message: "Error parsing file src/legacy/auth.js: Unexpected token", severity: "error" },
-      { message: "Generating API documentation...", severity: "info" },
-      { message: "Extracting React components...", severity: "info" },
-      { message: "Building dependency graph...", severity: "info" },
-      { message: "Running security scan...", severity: "info" },
-      { message: "Critical: Hardcoded secret found in config.ts", severity: "error" },
-      { message: "Finalizing documentation...", severity: "info" },
-      { message: "Analysis complete.", severity: "success" },
-    ]
+    // Fetch project metadata for the page title
+    getProject(id)
+      .then((p) => setProjectName(p.name))
+      .catch(() => { }) // non-fatal
 
-    setConnectionState("connected")
-    updateProjectStatus(id!, "analyzing")
+    // Start the SSE connection
+    const ctrl = new AbortController()
+    abortRef.current = ctrl
 
-    const interval = setInterval(() => {
-      if (isPaused) return
+    const token = getAccessToken()
 
-      if (eventIndex < mockEvents.length) {
-        const event = mockEvents[eventIndex]
-        setLogs(prev => [...prev, {
-          id: Math.random().toString(36).substring(7),
-          timestamp: new Date().toISOString(),
-          ...event
-        }])
-        eventIndex++
-      } else {
-        clearInterval(interval)
-        setConnectionState("disconnected")
-        updateProjectStatus(id!, "completed")
-      }
-    }, 1500) // Emit event every 1.5s
+      ; (async () => {
+        try {
+          await fetchEventSource(`${API_BASE}/projects/${id}/stream`, {
+            headers: {
+              Authorization: token ? `Bearer ${token}` : "",
+            },
+            signal: ctrl.signal,
+            credentials: "include",
 
-    return () => clearInterval(interval)
-  }, [id, project, isPaused, updateProjectStatus])
+            onopen: async (res) => {
+              if (res.ok) {
+                setConnectionState("connected")
+                setLoadError(null)
+              } else {
+                const body = await res.json().catch(() => ({}))
+                throw new Error(body?.error?.message ?? `HTTP ${res.status}`)
+              }
+            },
 
-  if (!project) {
-    return <div>Project not found</div>
-  }
+            onmessage: (ev) => {
+              try {
+                const data = JSON.parse(ev.data ?? "{}")
+
+                // Ignore heartbeat pings
+                if (data.type === "ping") return
+
+                const severity = eventToSeverity(data.step, data.status)
+                const message = eventToMessage(data)
+
+                // Don't add duplicate "done" events
+                setLogs((prev) => {
+                  if (data.step === "done" && prev.some((l) => l.message.startsWith("✅"))) return prev
+                  return [
+                    ...prev,
+                    {
+                      id: `${Date.now()}-${Math.random()}`,
+                      timestamp: data.ts ?? new Date().toISOString(),
+                      message,
+                      severity,
+                    },
+                  ]
+                })
+
+                if (data.step === "done") {
+                  setPipelineStatus("done")
+                  setConnectionState("disconnected")
+                  updateLocalProject(id, { status: "completed", apiStatus: "done" })
+                } else if (data.step === "error") {
+                  setPipelineStatus("error")
+                  setConnectionState("disconnected")
+                  updateLocalProject(id, { status: "failed", apiStatus: "error" })
+                }
+              } catch {
+                // Malformed JSON — ignore
+              }
+            },
+
+            onerror: (err) => {
+              if (ctrl.signal.aborted) return // user navigated away
+              setConnectionState("reconnecting")
+              // fetchEventSource will auto-retry; nothing needed here.
+            },
+
+            onclose: () => {
+              if (!ctrl.signal.aborted) {
+                setConnectionState("disconnected")
+              }
+            },
+          })
+        } catch (err: any) {
+          if (!ctrl.signal.aborted) {
+            setConnectionState("disconnected")
+            setLoadError(err?.message ?? "Failed to connect to the stream.")
+          }
+        }
+      })()
+
+    return () => {
+      ctrl.abort()
+    }
+  }, [id, getProject, updateLocalProject])
 
   const getSeverityIcon = (severity: LogSeverity) => {
     switch (severity) {
@@ -111,36 +195,43 @@ export function LiveAnalysisPage() {
       <div className="flex items-center justify-between shrink-0">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild className="-ml-2">
-            <Link to={`/projects/${project.id}`}>
+            <Link to={`/projects/${id}`}>
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-              Live Analysis
-              {connectionState === "connected" && <span className="relative flex h-3 w-3 ml-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
-              </span>}
+            <h1 className="text-2xl font-bold font-mono tracking-tight flex items-center gap-2">
+              Analysing
+              {connectionState === "connected" && (
+                <span className="relative flex h-3 w-3 ml-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500" />
+                </span>
+              )}
             </h1>
-            <p className="text-sm text-muted-foreground">{project.name}</p>
+            <p className="text-sm text-muted-foreground">{projectName || `Project ${id}`}</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
           {connectionState === "reconnecting" && (
             <Badge variant="warning" className="animate-pulse">
-              <RefreshCw className="mr-1 h-3 w-3 animate-spin" /> Reconnecting...
+              <RefreshCw className="mr-1 h-3 w-3 animate-spin" /> Reconnecting…
             </Badge>
           )}
-          {connectionState === "disconnected" && project.status === "completed" && (
+          {connectionState === "disconnected" && pipelineStatus === "done" && (
             <Button asChild variant="default">
-              <Link to={`/projects/${project.id}/docs`}>View Documentation</Link>
+              <Link to={`/projects/${id}/docs`}>View Documentation</Link>
             </Button>
           )}
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setIsPaused(!isPaused)}
+          {connectionState === "disconnected" && pipelineStatus === "error" && (
+            <Button variant="outline" onClick={() => navigate(`/projects/${id}`)}>
+              View Project
+            </Button>
+          )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsPaused((p) => !p)}
             disabled={connectionState === "disconnected"}
           >
             {isPaused ? (
@@ -152,28 +243,48 @@ export function LiveAnalysisPage() {
         </div>
       </div>
 
-      <Card className="flex-1 flex flex-col overflow-hidden border-border bg-[#0d1117]">
+      {/* Stream error */}
+      {loadError && (
+        <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive shrink-0">
+          {loadError}
+        </div>
+      )}
+
+      <Card className="flex-1 flex flex-col overflow-hidden border-border  shadow-none">
         <CardHeader className="py-3 px-4 border-b border-border/20 bg-muted/5 shrink-0 flex flex-row items-center gap-2">
           <Terminal className="h-4 w-4 text-muted-foreground" />
-          <CardTitle className="text-sm font-mono text-muted-foreground font-normal">analysis-stream.log</CardTitle>
+          <CardTitle className="text-sm font-mono text-muted-foreground font-normal">
+            Working....
+          </CardTitle>
+          {connectionState !== "disconnected" && (
+            <Badge variant="outline" className="ml-auto text-xs">
+              {logs.length} events
+            </Badge>
+          )}
         </CardHeader>
+        
         <CardContent className="flex-1 overflow-y-auto p-4 font-mono text-sm">
           {logs.length === 0 ? (
             <div className="flex items-center justify-center h-full text-muted-foreground">
-              <Loader2 className="h-5 w-5 animate-spin mr-2" /> Waiting for logs...
+              <Loader2 className="h-5 w-5 animate-spin mr-2" /> Waiting for pipeline events…
             </div>
           ) : (
             <div className="space-y-1">
               {logs.map((log) => (
-                <div 
-                  key={log.id} 
+                <div
+                  key={log.id}
                   className={cn(
                     "flex items-start gap-3 py-1 px-2 rounded-sm transition-colors",
                     getSeverityColor(log.severity)
                   )}
                 >
                   <span className="text-muted-foreground/50 shrink-0 w-20">
-                    {new Date(log.timestamp).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute:'2-digit', second:'2-digit' })}
+                    {new Date(log.timestamp).toLocaleTimeString([], {
+                      hour12: false,
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      second: "2-digit",
+                    })}
                   </span>
                   <span className="shrink-0 mt-0.5">{getSeverityIcon(log.severity)}</span>
                   <span className="break-all">{log.message}</span>
