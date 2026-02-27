@@ -3,8 +3,11 @@ import { Button } from './ui/button'
 import { Link } from 'react-router-dom'
 import { ThemeToggle } from './theme-toggle'
 import { Mail, MessageSquare } from 'lucide-react'
+import { useTheme } from './theme-provider'
 
 function TopHeader() {
+    const { theme } = useTheme();
+
     return (<>
         {/* Full-width Two-Tier Navbar */}
         <header className="relative z-50 w-full border-b border-border bg-background/80 backdrop-blur-md">
@@ -25,7 +28,11 @@ function TopHeader() {
             {/* Bottom Section */}
             <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <img src="/logo-dark.png" alt="Docnine Logo" className="h-10 w-10 w-auto" />
+                    <img
+                        src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
+                        alt="Docnine Logo"
+                        className="h-8 w-10 w-auto"
+                    />
                 </div>
 
                 <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">

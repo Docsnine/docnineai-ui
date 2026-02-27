@@ -23,7 +23,7 @@ export function AIChatPanel({ context, onClose }: AIChatPanelProps) {
     {
       id: "1",
       role: "ai",
-      content: "Hello! I'm your AI documentation assistant. You can ask me questions about this document, or ask me to explain specific parts of the codebase."
+      content: "Hello! I'm your Docnine assistant. You can ask me questions about this document, or ask me to explain specific parts of the document."
     }
   ])
   const [input, setInput] = useState("")
@@ -44,7 +44,7 @@ export function AIChatPanel({ context, onClose }: AIChatPanelProps) {
 
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
-      
+
       const prompt = `
         You are an AI assistant helping a developer understand their project's documentation.
         Here is the current documentation context:
@@ -61,17 +61,17 @@ export function AIChatPanel({ context, onClose }: AIChatPanelProps) {
         contents: prompt,
       })
 
-      setMessages(prev => [...prev, { 
-        id: (Date.now() + 1).toString(), 
-        role: "ai", 
-        content: response.text || "I couldn't generate a response." 
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        role: "ai",
+        content: response.text || "I couldn't generate a response."
       }])
     } catch (error) {
       console.error("Error generating AI response:", error)
-      setMessages(prev => [...prev, { 
-        id: (Date.now() + 1).toString(), 
-        role: "ai", 
-        content: "Sorry, I encountered an error while trying to answer your question. Please check your API key or try again later." 
+      setMessages(prev => [...prev, {
+        id: (Date.now() + 1).toString(),
+        role: "ai",
+        content: "Sorry, I encountered an error while trying to answer your question. Please check your API key or try again later."
       }])
     } finally {
       setIsLoading(false)
@@ -92,8 +92,8 @@ export function AIChatPanel({ context, onClose }: AIChatPanelProps) {
       <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.map((msg) => (
-            <div 
-              key={msg.id} 
+            <div
+              key={msg.id}
               className={cn(
                 "flex gap-3 max-w-[85%]",
                 msg.role === "user" ? "ml-auto flex-row-reverse" : ""
@@ -132,11 +132,11 @@ export function AIChatPanel({ context, onClose }: AIChatPanelProps) {
           <div ref={messagesEndRef} />
         </div>
         <div className="p-3 border-t border-border shrink-0">
-          <form 
+          <form
             onSubmit={(e) => { e.preventDefault(); handleSend(); }}
             className="flex items-center gap-2"
           >
-            <Input 
+            <Input
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about this document..."

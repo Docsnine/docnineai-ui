@@ -34,6 +34,7 @@ import {
 import Markdown from "react-markdown"
 import { cn } from "@/lib/utils"
 import { AIChatPanel } from "@/components/projects/ai-chat"
+import { DocRenderer } from "@/components/projects/DocRenderer"
 
 // ── Tab definitions ──────────────────────────────────────────────────────────
 type DocTab = "readme" | "api" | "schema" | "internal" | "security" | "other_docs"
@@ -397,10 +398,7 @@ export function DocumentationViewerPage() {
                   </div>
                 ) : effectiveOutput && getEffectiveOutputTabContent(effectiveOutput, activeTab) ? (
                   <div className="prose prose-slate dark:prose-invert max-w-none">
-                    <h2 className="text-2xl font-bold mb-4">
-                      {TABS.find(t => t.key === activeTab)?.label}
-                    </h2>
-                    <Markdown>{getEffectiveOutputTabContent(effectiveOutput, activeTab)}</Markdown>
+                    <DocRenderer content={getEffectiveOutputTabContent(effectiveOutput, activeTab)} />
                   </div>
                 ) : project && mapApiStatus(project.status) === "completed" ? (
                   <div className="flex flex-col items-center justify-center py-24 text-center text-muted-foreground">
@@ -418,12 +416,8 @@ export function DocumentationViewerPage() {
               {activeTab === "security" && (
                 editedContent.security ? (
                   <div className="space-y-6">
-                    <div>
-                      <h2 className="text-2xl font-bold tracking-tight mb-2">Security Report</h2>
-                      <p className="text-muted-foreground">AI-generated security analysis for this repository.</p>
-                    </div>
                     <div className="prose prose-slate dark:prose-invert max-w-none">
-                      <Markdown>{editedContent.security}</Markdown>
+                      <DocRenderer content={editedContent.security} />
                     </div>
                   </div>
                 ) : (
@@ -442,7 +436,7 @@ export function DocumentationViewerPage() {
                     <p className="text-muted-foreground">Attached documentation for this project.</p>
                   </div>
                   <div className="prose prose-slate dark:prose-invert max-w-none">
-                    {/* <Markdown>{editedContent.other_docs}</Markdown> */}
+                    <DocRenderer content={editedContent.other_docs} />
                   </div>
                 </div>
               )}
