@@ -25,10 +25,7 @@ function TopHeader() {
             {/* Bottom Section */}
             <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground font-bold text-lg">
-                        D
-                    </div>
-                    <span className="font-semibold text-xl tracking-tight text-foreground">Docnine</span>
+                    <img src="/logo-dark.png" alt="Docnine Logo" className="h-10 w-10 w-auto" />
                 </div>
 
                 <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">

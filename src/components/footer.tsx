@@ -10,10 +10,7 @@ function Footer() {
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-12 mb-16">
                         <div className="md:col-span-2">
                             <div className="flex items-center gap-3 mb-6">
-                                <div className="flex items-center justify-center w-8 h-8 rounded-md bg-primary text-primary-foreground font-bold text-lg">
-                                    D
-                                </div>
-                                <span className="font-bold text-xl text-foreground">Docnine</span>
+                                 <img src="/logo-dark.png" alt="Docnine Logo" className="h-24 w-10 w-auto" />
                             </div>
                             <p className="text-muted-foreground leading-relaxed max-w-sm mb-8">
                                 Open-source team chat with AI assistance. Built for modern collaboration.

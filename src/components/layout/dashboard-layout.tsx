@@ -1,20 +1,27 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
-import { BookOpen, Github, Search, LayoutDashboard, FolderKanban, User, Settings, LogOut } from "lucide-react"
+import { BookOpen, Github, Search, LayoutDashboard, FolderKanban, User, Settings, LogOut, BookDown, CommandIcon, Command, TerminalIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuthStore } from "@/store/auth"
 import { authApi } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { useTheme } from "../theme-provider"
 
 export function DashboardLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, clearAuth } = useAuthStore()
+  const { theme } = useTheme();
 
   const navLinks = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Projects", href: "/projects", icon: FolderKanban },
+    { name: "Documentations", href: "/documentations", icon: BookDown },
+    { name: "Logs", href: "/logs", icon: TerminalIcon }
+  ]
+
+  const rightSideLinks = [
     { name: "Profile", href: "/profile", icon: User },
     { name: "Settings", href: "/settings", icon: Settings },
   ]
@@ -23,7 +30,7 @@ export function DashboardLayout() {
     try {
       await authApi.logout()
     } catch {
-      // Even if the server call fails, clear local state and redirect
+
     } finally {
       clearAuth()
       navigate("/login", { replace: true })
@@ -37,8 +44,13 @@ export function DashboardLayout() {
         <div className="flex h-14 items-center justify-between px-6">
           <div className="flex items-center gap-4">
             <Link to="/dashboard" className="flex items-center gap-2 font-semibold text-primary">
-              <BookOpen className="h-5 w-5" />
-              <span>Docnine</span>
+              <Link to="/dashboard" className="flex items-center gap-2 font-semibold text-primary">
+                <img
+                  src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
+                  alt="Docnine Logo"
+                  className="h-8 w-10 w-auto"
+                />
+              </Link>
             </Link>
             <div className="h-4 w-px bg-border" />
             <a
@@ -57,7 +69,7 @@ export function DashboardLayout() {
               <Input
                 type="search"
                 placeholder="Search projects..."
-                className="w-full bg-muted/50 pl-9 border-transparent focus-visible:border-primary"
+                className="w-full bg-muted/50 pl-9 focus-visible:border-primary border-border"
               />
             </div>
 
@@ -76,9 +88,30 @@ export function DashboardLayout() {
         </div>
 
         {/* Sub-nav */}
-        <div className="flex h-12 items-center justify-between px-6 border-t border-border/50 bg-background/50 backdrop-blur-sm">
+        <div className="flex h-12 items-center justify-between px-6 border-t border-border/90 bg-background/50 backdrop-blur-sm">
           <nav className="flex items-center gap-6">
             {navLinks.map((link) => {
+              const Icon = link.icon
+              const isActive = location.pathname.startsWith(link.href)
+              return (
+                <Link
+                  key={link.name}
+                  to={link.href}
+                  className={cn(
+                    "flex items-center gap-2 text-sm font-medium transition-colors",
+                    isActive
+                      ? "text-primary border-b-2 border-primary py-3"
+                      : "text-muted-foreground hover:text-foreground py-3 border-b-2 border-transparent"
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  {link.name}
+                </Link>
+              )
+            })}
+          </nav>
+          <nav className="flex items-center gap-6">
+            {rightSideLinks.map((link) => {
               const Icon = link.icon
               const isActive = location.pathname.startsWith(link.href)
               return (

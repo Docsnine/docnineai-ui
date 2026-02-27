@@ -207,7 +207,7 @@ export function ProjectOverviewPage() {
             </div>
 
             {/* Header card */}
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-card p-6 rounded-xl border border-border shadow-sm">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-card p-6 rounded-xl border border-border">
                 <div className="space-y-2">
                     <div className="flex items-center gap-3 flex-wrap">
                         <h1 className="text-3xl font-bold tracking-tight">{project.name}</h1>
@@ -223,7 +223,7 @@ export function ProjectOverviewPage() {
                             <Github className="h-4 w-4" />
                             {project.repoOwner}/{project.name}
                         </a>
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1 text-[11px]">
                             <Clock className="h-4 w-4" />
                             Updated {formatDistanceToNow(new Date(project.updatedAt), { addSuffix: true })}
                         </span>
@@ -257,9 +257,9 @@ export function ProjectOverviewPage() {
                 </div>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-3">
+            <div className="grid gap-x-9 md:grid-cols-3">
                 {/* Main content */}
-                <Card className="md:col-span-2">
+                <Card className="md:col-span-2 shadow-none">
                     <CardHeader>
                         <CardTitle>Project Overview</CardTitle>
                         <CardDescription>Summary of the latest analysis run.</CardDescription>
@@ -267,9 +267,6 @@ export function ProjectOverviewPage() {
                     <CardContent>
                         {project.status === "completed" ? (
                             <div className="space-y-4">
-                                <p className="text-muted-foreground">
-                                    The codebase was successfully analyzed. AI documentation has been generated for all modules.
-                                </p>
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-border">
                                     {project.readme && (
                                         <div className="space-y-1">
@@ -346,7 +343,7 @@ export function ProjectOverviewPage() {
                 </Card>
 
                 {/* Actions sidebar */}
-                <Card>
+                <Card className="shadow-none">
                     <CardHeader>
                         <CardTitle>Actions</CardTitle>
                         <CardDescription>Manage exports and project settings.</CardDescription>

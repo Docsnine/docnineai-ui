@@ -36,14 +36,13 @@ import { cn } from "@/lib/utils"
 import { AIChatPanel } from "@/components/projects/ai-chat"
 
 // ── Tab definitions ──────────────────────────────────────────────────────────
-
-type DocTab = "readme" | "api" | "schema" | "internal" | "security"
+type DocTab = "readme" | "api" | "schema" | "internal" | "security" | "other_docs"
 
 interface TabDef {
   key: DocTab
   label: string
   icon: React.ElementType
-  field: "readme" | "apiReference" | "schemaDocs" | "internalDocs" | "securityReport"
+  field: "readme" | "apiReference" | "schemaDocs" | "internalDocs" | "securityReport" | "otherDocs"
 }
 
 const TABS: TabDef[] = [
@@ -52,6 +51,7 @@ const TABS: TabDef[] = [
   { key: "schema", label: "Schema Docs", icon: Database, field: "schemaDocs" },
   { key: "internal", label: "Internal Docs", icon: BookOpen, field: "internalDocs" },
   { key: "security", label: "Security", icon: ShieldAlert, field: "securityReport" },
+  { key: "other_docs", label: "Other Docs", icon: FileCode, field: "otherDocs" },
 ]
 
 // ── Markdown editor toolbar ──────────────────────────────────────────────────
@@ -84,7 +84,6 @@ function MarkdownToolbar({ onInsert }: { onInsert: (prefix: string, suffix?: str
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-
 export function DocumentationViewerPage() {
   const { id } = useParams<{ id: string }>()
   const { getProjectData } = useProjectStore()
@@ -114,6 +113,7 @@ export function DocumentationViewerPage() {
     schema: "",
     internal: "",
     security: "",
+    other_docs: "",
   })
 
   // Load project on mount
@@ -130,6 +130,7 @@ export function DocumentationViewerPage() {
           schema: data.effectiveOutput?.schemaDocs ?? "",
           internal: data.effectiveOutput?.internalDocs ?? "",
           security: data.effectiveOutput?.securityReport ?? "",
+          other_docs: data.effectiveOutput?.otherDocs ?? "",
         });
       })
       .finally(() => setIsLoading(false));
@@ -157,7 +158,6 @@ export function DocumentationViewerPage() {
   const handleSave = () => setIsEditMode(false)
 
   const handleCancelEdit = () => {
-    // Restore from project data
     if (project) {
       const effective = (project as any).effectiveOutput || project;
       setEditedContent({
@@ -166,6 +166,7 @@ export function DocumentationViewerPage() {
         schema: effective.schemaDocs ?? "",
         internal: effective.internalDocs ?? "",
         security: effective.securityReport ?? "",
+        other_docs: effective.otherDocs ?? "",
       });
     }
     setIsEditMode(false);
@@ -216,7 +217,7 @@ export function DocumentationViewerPage() {
     setExportMessage(null)
     try {
       const result = await projectsApi.exportNotion(id)
-      setExportMessage(`✅ Pushed to Notion — ${result.mainPageUrl}`)
+      setExportMessage(`Pushed to Notion — ${result.mainPageUrl}`)
     } catch (err: any) {
       setExportMessage("Notion export failed: " + (err?.message ?? "unknown error"))
     } finally {
@@ -431,6 +432,19 @@ export function DocumentationViewerPage() {
                     <p>No security report available.</p>
                   </div>
                 )
+              )}
+
+              {/* Security tab */}
+              {activeTab === "other_docs" && (
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-2xl font-bold tracking-tight mb-2">Other Documentation</h2>
+                    <p className="text-muted-foreground">Attached documentation for this project.</p>
+                  </div>
+                  <div className="prose prose-slate dark:prose-invert max-w-none">
+                    {/* <Markdown>{editedContent.other_docs}</Markdown> */}
+                  </div>
+                </div>
               )}
             </div>
           </div>
