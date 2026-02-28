@@ -5,12 +5,10 @@ import { defineConfig, loadEnv } from "vite";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, ".", "");
+  const BACKEND_URL = env.VITE_API_URL || "";
 
-  // Backend URL — defaults to localhost:3000 in development.
-  const BACKEND_URL = env.VITE_API_URL || "http://localhost:3000";
-
-  // All backend route prefixes that need to be proxied.
   const proxyPaths = ["/auth", "/github", "/projects", "/api", "/health"];
+
   const proxyConfig = Object.fromEntries(
     proxyPaths.map((p) => [
       p,
@@ -19,7 +17,7 @@ export default defineConfig(({ mode }) => {
         changeOrigin: true,
         secure: false,
       },
-    ])
+    ]),
   );
 
   return {

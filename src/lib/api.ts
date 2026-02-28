@@ -56,7 +56,6 @@ export function setAccessToken(token: string | null) {
 // ---------------------------------------------------------------------------
 // Core fetch wrapper
 // ---------------------------------------------------------------------------
-
 let _isRefreshing = false
 let _refreshPromise: Promise<string | null> | null = null
 
@@ -98,6 +97,7 @@ export async function apiFetch<T = unknown>(
   const { skipAuth, ...fetchOptions } = options
 
   const headers = new Headers(fetchOptions.headers)
+  
   if (!headers.has('Content-Type') && !(fetchOptions.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json')
   }
@@ -159,7 +159,6 @@ export async function apiFetch<T = unknown>(
 // ---------------------------------------------------------------------------
 
 // ── Auth ──────────────────────────────────────────────────────────────────
-
 export interface User {
   id: string
   name: string
