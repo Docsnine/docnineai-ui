@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { useParams, Link, useNavigate } from "react-router-dom"
 import { useProjectStore } from "@/store/projects"
 import { projectsApi, ApiException } from "@/lib/api"
+import { DocRenderer } from "@/components/projects/DocRenderer"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -35,13 +36,29 @@ export function ProjectOverviewPage() {
     const [error, setError] = useState<string | null>(null)
     const [actionLoading, setActionLoading] = useState<string | null>(null)
     const [exportMessage, setExportMessage] = useState<string | null>(null)
+    const [githubReadme, setGithubReadme] = useState<string | null>(null)
+    const [isReadmeLoading, setIsReadmeLoading] = useState(false)
 
     useEffect(() => {
         if (!id) return
         setIsLoading(true)
         setError(null)
         getProject(id)
-            .then(setProject)
+            .then((p) => {
+                setProject(p)
+                // Fetch the raw README from GitHub as soon as we have the repo URL
+                const urlParts = p.repoUrl.replace(/\/$/, "").split("/")
+                const owner = p.repoOwner || urlParts[urlParts.length - 2]
+                const repo = urlParts[urlParts.length - 1]
+                setIsReadmeLoading(true)
+                fetch(`https://api.github.com/repos/${owner}/${repo}/readme`, {
+                    headers: { Accept: "application/vnd.github.raw" },
+                })
+                    .then((r) => (r.ok ? r.text() : Promise.reject()))
+                    .then(setGithubReadme)
+                    .catch(() => setGithubReadme(null))
+                    .finally(() => setIsReadmeLoading(false))
+            })
             .catch((err: any) => setError(err?.message ?? "Failed to load project."))
             .finally(() => setIsLoading(false))
     }, [id, getProject])
@@ -307,6 +324,27 @@ export function ProjectOverviewPage() {
                                             </p>
                                             <p className="text-xs text-muted-foreground">Generated</p>
                                         </div>
+                                    )}
+                                </div>
+
+                                {/* GitHub README */}
+                                <div className="pt-4 border-t border-border">
+                                    <p className="text-sm font-semibold flex items-center gap-1.5 mb-3 text-muted-foreground">
+                                        <Github className="h-4 w-4" /> GitHub README
+                                    </p>
+                                    {isReadmeLoading ? (
+                                        <div className="space-y-2">
+                                            <Skeleton className="h-4 w-3/4" />
+                                            <Skeleton className="h-4 w-full" />
+                                            <Skeleton className="h-4 w-5/6" />
+                                            <Skeleton className="h-4 w-2/3" />
+                                        </div>
+                                    ) : githubReadme ? (
+                                        <div className="prose prose-sm prose-slate dark:prose-invert max-w-none max-h-[480px] overflow-y-auto pr-1">
+                                            <DocRenderer content={githubReadme} />
+                                        </div>
+                                    ) : (
+                                        <p className="text-sm text-muted-foreground italic">No README found in this repository.</p>
                                     )}
                                 </div>
                             </div>
