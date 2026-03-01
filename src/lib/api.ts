@@ -251,6 +251,13 @@ export interface GitHubReposResponse {
   hasNextPage: boolean
 }
 
+export interface GitHubOrg {
+  id: number
+  login: string
+  description: string | null
+  avatarUrl: string
+}
+
 export const githubApi = {
   getStatus: () =>
     apiFetch<GitHubStatus>('/github/status'),
@@ -258,12 +265,16 @@ export const githubApi = {
   getOAuthStartUrl: () =>
     apiFetch<{ url: string }>('/github/oauth/start'),
 
-  getRepos: (params: { page?: number; perPage?: number; type?: string; sort?: string } = {}) => {
+  getOrgs: () =>
+    apiFetch<{ orgs: GitHubOrg[] }>('/github/orgs'),
+
+  getRepos: (params: { page?: number; perPage?: number; type?: string; sort?: string; org?: string } = {}) => {
     const qs = new URLSearchParams()
     if (params.page) qs.set('page', String(params.page))
     if (params.perPage) qs.set('perPage', String(params.perPage))
     if (params.type) qs.set('type', params.type)
     if (params.sort) qs.set('sort', params.sort)
+    if (params.org) qs.set('org', params.org)
     return apiFetch<GitHubReposResponse>(`/github/repos?${qs}`)
   },
 

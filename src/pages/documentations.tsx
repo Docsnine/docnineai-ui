@@ -61,7 +61,7 @@ function DocProjectCard({ project }: { project: ApiProject }) {
     const updatedAgo = formatDistanceToNow(new Date(project.updatedAt), { addSuffix: true })
 
     return (
-        <Card className="flex flex-col hover:border-primary/40 transition-colors group">
+        <Card className="flex flex-col hover:border-primary/40 transition-colors group shadow-none">
             <CardHeader className="pb-3">
                 <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
