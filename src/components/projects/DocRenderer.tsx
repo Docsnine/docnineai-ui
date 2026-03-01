@@ -127,7 +127,7 @@ function CopyButton({ text }: { text: string }) {
 // CODE BLOCK COMPONENT  (FIX #2: lives outside `code` renderer)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function CodeBlock({ lang, code }: { lang: string; code: string }) {
+export function CodeBlock({ lang, code }: { lang: string; code: string }) {
     const meta = LANG_META[lang.toLowerCase()] ?? null
 
     return (

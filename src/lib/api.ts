@@ -8,6 +8,7 @@
  *   3. Retries the original request once with the new token.
  *   4. Throws a structured ApiError on failure.
  */
+import { fetchEventSource } from '@microsoft/fetch-event-source'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -301,6 +302,12 @@ export const githubApi = {
 
 export type ApiProjectStatus = 'queued' | 'running' | 'done' | 'error' | 'archived'
 
+export interface ApiProjectEditedSection {
+  section: string
+  editedAt: string
+  stale: boolean
+}
+
 export interface ApiProjectMeta {
   name: string;
   description: string | null;
@@ -353,7 +360,7 @@ export interface ApiProject {
   security: ApiProjectSecurity;
   output: ApiProjectOutput;
   editedOutput: ApiProjectOutput;
-  editedSections: string[];
+  editedSections: ApiProjectEditedSection[];
   createdAt: string;
   updatedAt: string;
   chatSessionId?: string;
@@ -362,7 +369,7 @@ export interface ApiProject {
 export interface ProjectGetResponse {
   project: ApiProject;
   effectiveOutput: ApiProjectOutput;
-  editedSections: string[];
+  editedSections: ApiProjectEditedSection[];
   lastSyncedCommit: string;
 }
 
@@ -464,4 +471,106 @@ export const projectsApi = {
   /** Fetch the persisted pipeline event log for a project (last 200 events). */
   getEvents: (id: string) =>
     apiFetch<{ events: PipelineEvent[]; status: string; jobId: string }>(`/projects/${id}/events`),
+
+  /** Save a user edit for one documentation section. */
+  saveEdit: (id: string, section: string, content: string) =>
+    apiFetch<{ project: ApiProject; effectiveOutput: ApiProjectOutput; editedSections: ApiProjectEditedSection[] }>(
+      `/projects/${id}/docs/${section}`,
+      { method: 'PATCH', body: JSON.stringify({ content }) },
+    ),
+
+  /** Accept the latest AI-generated content for a stale section (clears the user edit). */
+  acceptAI: (id: string, section: string) =>
+    apiFetch<{ project: ApiProject; effectiveOutput: ApiProjectOutput; editedSections: ApiProjectEditedSection[] }>(
+      `/projects/${id}/docs/${section}/accept-ai`,
+      { method: 'POST' },
+    ),
+}
+
+// ── Version history ───────────────────────────────────────────────────────
+
+export interface DocVersion {
+  _id: string
+  projectId: string
+  section: string
+  source: 'ai_full' | 'ai_incremental' | 'user'
+  meta: {
+    commitSha?: string
+    changedFiles?: string[]
+    agentsRun?: string[]
+    changeSummary?: string
+  }
+  createdAt: string
+  updatedAt: string
+  content?: string // only present when fetched individually
+}
+
+export const versionsApi = {
+  list: (projectId: string, section: string) =>
+    apiFetch<{ versions: DocVersion[]; total: number; page: number; limit: number }>(
+      `/projects/${projectId}/docs/${section}/versions`,
+    ),
+
+  get: (projectId: string, section: string, versionId: string) =>
+    apiFetch<{ version: DocVersion & { content: string } }>(
+      `/projects/${projectId}/docs/${section}/versions/${versionId}`,
+    ),
+
+  restore: (projectId: string, section: string, versionId: string) =>
+    apiFetch<{ project: ApiProject; effectiveOutput: ApiProjectOutput; editedSections: ApiProjectEditedSection[] }>(
+      `/projects/${projectId}/docs/${section}/versions/${versionId}/restore`,
+      { method: 'POST' },
+    ),
+}
+
+// ── Chat ──────────────────────────────────────────────────────────────────
+
+/**
+ * Stream tokens from POST /projects/:id/chat via SSE.
+ * Returns an AbortController — call .abort() to stop the stream.
+ */
+export function chatStream(
+  projectId: string,
+  message: string,
+  handlers: {
+    onToken: (token: string) => void
+    onDone: (result: { historyLength: number }) => void
+    onError: (err: Error) => void
+  },
+): AbortController {
+  const ctrl = new AbortController()
+  const token = _accessToken
+
+  fetchEventSource(`${API_BASE}/projects/${projectId}/chat`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    credentials: 'include',
+    body: JSON.stringify({ message }),
+    signal: ctrl.signal,
+    openWhenHidden: true,
+    onmessage(ev) {
+      try {
+        const data = JSON.parse(ev.data)
+        if (data.type === 'token') handlers.onToken(data.token)
+        else if (data.type === 'done') { handlers.onDone(data); ctrl.abort() }
+        else if (data.type === 'error') handlers.onError(new Error(data.message))
+      } catch { /* ignore parse errors */ }
+    },
+    onerror(err) {
+      handlers.onError(err instanceof Error ? err : new Error(String(err)))
+      throw err // prevents auto-reconnect
+    },
+  }).catch((err) => {
+    if (err?.name !== 'AbortError') handlers.onError(err)
+  })
+
+  return ctrl
+}
+
+export const chatApi = {
+  reset: (projectId: string) =>
+    apiFetch<void>(`/projects/${projectId}/chat`, { method: 'DELETE' }),
 }
