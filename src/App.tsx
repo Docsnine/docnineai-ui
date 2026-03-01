@@ -6,6 +6,7 @@ import { SignupPage } from "@/pages/auth/signup"
 import { VerifyPage } from "@/pages/auth/verify"
 import { ForgotPasswordPage } from "@/pages/auth/forgot-password"
 import { ResetPasswordPage } from "@/pages/auth/reset-password"
+import { AuthCallbackPage } from "@/pages/auth/callback"
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { DashboardPage } from "@/pages/dashboard"
 import { ProjectOverviewPage } from "@/pages/projects/overview"
@@ -102,6 +103,8 @@ function AppRoutes() {
       <Route path="/verify" element={<VerifyPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      {/* OAuth social login callback */}
+      <Route path="/auth/callback" element={<AuthCallbackPage />} />
 
       {/* Protected Routes — nested under DashboardLayout */}
       <Route

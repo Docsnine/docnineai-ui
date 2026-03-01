@@ -164,8 +164,11 @@ export interface User {
   name: string
   email: string
   emailVerified: boolean
+  provider?: 'email' | 'github' | 'google'
   githubConnected?: boolean
   githubUsername?: string
+  googleId?: string
+  googleUsername?: string
   createdAt: string
 }
 
@@ -222,6 +225,18 @@ export const authApi = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+
+  /** Google Docs export — settings-level (no project ID needed) */
+  getGoogleDocsStatus: () =>
+    apiFetch<{ connected: boolean; email?: string; name?: string; connectedAt?: string }>(
+      '/auth/google-docs/status',
+    ),
+
+  getGoogleDocsStartUrl: () =>
+    apiFetch<{ url: string }>('/auth/google-docs/start'),
+
+  disconnectGoogleDocs: () =>
+    apiFetch<void>('/auth/google-docs', { method: 'DELETE' }),
 }
 
 // ── GitHub ────────────────────────────────────────────────────────────────
@@ -422,6 +437,27 @@ export const projectsApi = {
   exportNotion: (id: string) =>
     apiFetch<{ mainPageUrl: string; mainPageId: string; childPages: string[] }>(
       `/projects/${id}/export/notion`,
+      { method: 'POST' },
+    ),
+
+  /** Get Google Docs OAuth connect URL for the project owner. */
+  getGoogleDocsConnectUrl: (id: string) =>
+    apiFetch<{ url: string }>(`/projects/${id}/export/google-docs/connect`),
+
+  /** Check whether the user has connected their Google Drive. */
+  getGoogleDocsStatus: (id: string) =>
+    apiFetch<{ connected: boolean; email?: string; name?: string; connectedAt?: string }>(
+      `/projects/${id}/export/google-docs/status`,
+    ),
+
+  /** Disconnect Google Drive tokens for the current user. */
+  disconnectGoogleDocs: (id: string) =>
+    apiFetch<void>(`/projects/${id}/export/google-docs`, { method: 'DELETE' }),
+
+  /** Export project docs to a new Google Doc. */
+  exportGoogleDocs: (id: string) =>
+    apiFetch<{ documentId: string; documentUrl: string; title: string }>(
+      `/projects/${id}/export/google-docs`,
       { method: 'POST' },
     ),
 

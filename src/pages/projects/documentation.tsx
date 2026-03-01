@@ -218,9 +218,36 @@ export function DocumentationViewerPage() {
     setExportMessage(null)
     try {
       const result = await projectsApi.exportNotion(id)
-      setExportMessage(`Pushed to Notion — ${result.mainPageUrl}`)
+      setExportMessage(`Pushed to Notion \u2014 ${result.mainPageUrl}`)
     } catch (err: any) {
       setExportMessage("Notion export failed: " + (err?.message ?? "unknown error"))
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleExportGoogleDocs = async () => {
+    if (!id) return
+    setActionLoading("googleDocs")
+    setExportMessage(null)
+    try {
+      const result = await projectsApi.exportGoogleDocs(id)
+      // Open the created doc in a new tab
+      window.open(result.documentUrl, "_blank", "noopener,noreferrer")
+      setExportMessage(`\u2705 Exported to Google Docs \u2014 doc opened in new tab`)
+    } catch (err: any) {
+      if (err?.code === "GOOGLE_NOT_CONNECTED") {
+        // Offer to connect — fetch the OAuth URL and redirect
+        setExportMessage("Connect Google Drive first. Redirecting to authorise...")
+        try {
+          const { url } = await projectsApi.getGoogleDocsConnectUrl(id)
+          setTimeout(() => { window.location.href = url }, 1500)
+        } catch {
+          setExportMessage("\u274C Connect Google Drive in Settings \u2192 Export Connections.")
+        }
+      } else {
+        setExportMessage("Google Docs export failed: " + (err?.message ?? "unknown error"))
+      }
     } finally {
       setActionLoading(null)
     }
@@ -324,6 +351,10 @@ export function DocumentationViewerPage() {
               </button>
               <button className="flex w-full items-center gap-2 px-3 py-2 hover:bg-muted transition-colors" onClick={handleExportNotion}>
                 <ExternalLink className="h-4 w-4" /> Push to Notion
+              </button>
+              <button className="flex w-full items-center gap-2 px-3 py-2 hover:bg-muted transition-colors" onClick={handleExportGoogleDocs}>
+                <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="#4285F4" opacity=".3"/><path d="M14 2v6h6" fill="none" stroke="#4285F4" strokeWidth="1.5"/><path d="M16 13H8M16 17H8M10 9H8" fill="none" stroke="#4285F4" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                Export to Google Docs
               </button>
             </div>
           </div>
