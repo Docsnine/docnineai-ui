@@ -210,6 +210,18 @@ export const authApi = {
       body: JSON.stringify(body),
       skipAuth: true,
     }),
+
+  updateProfile: (body: { name?: string; email?: string }) =>
+    apiFetch<{ user: User }>('/auth/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+
+  changePassword: (body: { currentPassword: string; newPassword: string; confirmNewPassword: string }) =>
+    apiFetch<void>('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 }
 
 // ── GitHub ────────────────────────────────────────────────────────────────
@@ -401,4 +413,8 @@ export const projectsApi = {
       `/projects/${id}/export/notion`,
       { method: 'POST' },
     ),
+
+  /** Fetch the persisted pipeline event log for a project (last 200 events). */
+  getEvents: (id: string) =>
+    apiFetch<{ events: PipelineEvent[]; status: string; jobId: string }>(`/projects/${id}/events`),
 }

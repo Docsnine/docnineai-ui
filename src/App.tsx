@@ -11,6 +11,10 @@ import { DashboardPage } from "@/pages/dashboard"
 import { ProjectOverviewPage } from "@/pages/projects/overview"
 import { LiveAnalysisPage } from "@/pages/projects/live-analysis"
 import { DocumentationViewerPage } from "@/pages/projects/documentation"
+import { DocumentationsPage } from "@/pages/documentations"
+import { LogsPage } from "@/pages/logs"
+import { ProfilePage } from "@/pages/profile"
+import { SettingsPage } from "@/pages/settings"
 import { useAuthStore } from "@/store/auth"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Loader2 } from "lucide-react"
@@ -113,8 +117,10 @@ function AppRoutes() {
         <Route path="projects/:id" element={<ProjectOverviewPage />} />
         <Route path="projects/:id/live" element={<LiveAnalysisPage />} />
         <Route path="projects/:id/docs" element={<DocumentationViewerPage />} />
-        <Route path="profile" element={<div className="p-6">Profile Settings (Coming Soon)</div>} />
-        <Route path="settings" element={<div className="p-6">Global Settings (Coming Soon)</div>} />
+        <Route path="documentations" element={<DocumentationsPage />} />
+        <Route path="logs" element={<LogsPage />} />
+        <Route path="profile" element={<ProfilePage />} />
+        <Route path="settings" element={<SettingsPage />} />
       </Route>
 
       {/* Fallback */}

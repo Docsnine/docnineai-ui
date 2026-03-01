@@ -1,7 +1,10 @@
 import { Github, MessageSquare, Twitter } from 'lucide-react'
 import React from 'react'
+import { useTheme } from './theme-provider';
 
 function Footer() {
+    const { theme } = useTheme();
+
     return (
         <>
             {/* Footer */}
@@ -9,8 +12,12 @@ function Footer() {
                 <div className="container mx-auto max-w-6xl">
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-12 mb-16">
                         <div className="md:col-span-2">
-                            <div className="flex items-center gap-3 mb-6">
-                                 <img src="/logo-dark.png" alt="Docnine Logo" className="h-24 w-10 w-auto" />
+                            <div className="flex items-center mb-6">
+                                <img
+                                    src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
+                                    alt="Docnine Logo"
+                                    className="h-24 w-auto"
+                                />
                             </div>
                             <p className="text-muted-foreground leading-relaxed max-w-sm mb-8">
                                 Open-source team chat with AI assistance. Built for modern collaboration.
