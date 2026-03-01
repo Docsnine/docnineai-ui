@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { BookOpen, MailCheck, CheckCircle2, XCircle, Loader2 } from "lucide-react"
 import { authApi, ApiException } from "@/lib/api"
+import TopHeader from "@/components/header"
+import BackgroundGrid from "@/components/ui/background-grid"
 
 /**
  * VerifyPage handles two cases:
@@ -101,30 +103,38 @@ export function VerifyPage() {
 
   // ── Case 4: No token → static "check your email" screen ──────────────
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/30 p-4">
-      <Link to="/" className="mb-8 flex items-center gap-2 font-semibold text-primary">
-        <BookOpen className="h-6 w-6" />
-        <span className="text-xl">Docnine</span>
-      </Link>
-      <Card className="w-full max-w-md text-center">
-        <CardHeader className="space-y-1">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <MailCheck className="h-6 w-6 text-primary" />
-          </div>
-          <CardTitle className="text-2xl font-bold">Check your email</CardTitle>
-          <CardDescription>We've sent a verification link to your email address.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground">
-            Please click the link in the email to verify your account and continue to the dashboard.
-          </p>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
-          <Button variant="outline" className="w-full" asChild>
-            <Link to="/login">Back to login</Link>
-          </Button>
-        </CardFooter>
-      </Card>
+    <div className="relative min-h-screen bg-background text-foreground overflow-hidden font-sans">
+      <BackgroundGrid />
+
+      {/* Top Left Glow */}
+      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-foreground/10 blur-[120px] pointer-events-none z-0" />
+
+      {/* Center Cyan Glow */}
+      <div className="absolute top-[40%] left-[50%] translate-x-[-50%] translate-y-[-50%] w-[40%] h-[30%] rounded-full bg-primary/20 blur-[100px] pointer-events-none z-0" />
+
+      <TopHeader />
+
+      <div className="flex flex-col items-center justify-center p-4 z-10 mt-10">
+        <Card className="w-full max-w-md bg-background/80 backdrop-blur-md">
+          <CardHeader className="space-y-1">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <MailCheck className="h-6 w-6 text-primary" />
+            </div>
+            <CardTitle className="text-2xl font-bold">Check your email</CardTitle>
+            <CardDescription>We've sent a verification link to your email address.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">
+              Please click the link in the email to verify your account and continue to the dashboard.
+            </p>
+          </CardContent>
+          <CardFooter className="flex flex-col space-y-4">
+            <Button variant="outline" className="w-full" asChild>
+              <Link to="/login">Back to login</Link>
+            </Button>
+          </CardFooter>
+        </Card>
+      </div>
     </div>
   )
 }

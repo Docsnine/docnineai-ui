@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
-import { BookOpen, Github, Search, LayoutDashboard, FolderKanban, User, Settings, LogOut, BookDown, CommandIcon, Command, TerminalIcon } from "lucide-react"
+import { BookOpen, Github, Search, FolderKanban, User, Settings, LogOut, BookDown, Command, TerminalIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useAuthStore } from "@/store/auth"
@@ -15,7 +15,6 @@ export function DashboardLayout() {
   const { theme } = useTheme();
 
   const navLinks = [
-    { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
     { name: "Projects", href: "/projects", icon: FolderKanban },
     { name: "Documentations", href: "/documentations", icon: BookDown },
     { name: "Logs", href: "/logs", icon: TerminalIcon }
@@ -43,14 +42,12 @@ export function DashboardLayout() {
       <header className="sticky top-0 z-40 w-full border-b border-border bg-background">
         <div className="flex h-14 items-center justify-between px-6">
           <div className="flex items-center gap-4">
-            <Link to="/dashboard" className="flex items-center gap-2 font-semibold text-primary">
-              <Link to="/dashboard" className="flex items-center gap-2 font-semibold text-primary">
-                <img
-                  src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
-                  alt="Docnine Logo"
-                  className="h-8 w-10 w-auto"
-                />
-              </Link>
+            <Link to="/projects" className="flex items-center gap-2 font-semibold text-primary">
+              <img
+                src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
+                alt="Docnine Logo"
+                className="h-8 w-auto"
+              />
             </Link>
             <div className="h-4 w-px bg-border" />
             <a

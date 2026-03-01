@@ -163,9 +163,10 @@ export function LandingPage() {
               Development barely has to feel like work
             </div>
 
-            <h2 className="text-[48px] leading-[48px] sm:text-[64px] sm:leading-[64px] font-bold tracking-tight text-foreground mb-8">
+            <h2 className="text-[48px] leading-[48px] sm:text-[64px] sm:leading-[64px] font-bold tracking-tight text-primary mb-8">
               Ready to upgrade your workflow?
             </h2>
+
             <p className="text-xl text-muted-foreground mb-12 max-w-2xl mx-auto">
               Join thousands of engineering teams who have switched to Docnine for a faster, smarter, and cleaner collaboration experience.
             </p>

@@ -9,6 +9,8 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { BookOpen, Loader2, ArrowLeft, KeyRound } from "lucide-react"
 import { authApi, ApiException } from "@/lib/api"
+import BackgroundGrid from "@/components/ui/background-grid"
+import TopHeader from "@/components/header"
 
 const resetPasswordSchema = z
     .object({
@@ -70,20 +72,32 @@ export function ResetPasswordPage() {
 
     if (!token) {
         return (
-            <div className="flex min-h-screen flex-col items-center justify-center bg-muted/30 p-4">
-                <Card className="w-full max-w-md text-center">
-                    <CardHeader>
-                        <CardTitle className="text-2xl font-bold">Invalid Link</CardTitle>
-                        <CardDescription>
-                            This password reset link is missing a token. Please request a new one.
-                        </CardDescription>
-                    </CardHeader>
-                    <CardFooter>
-                        <Button className="w-full" asChild>
-                            <Link to="/forgot-password">Request Reset Link</Link>
-                        </Button>
-                    </CardFooter>
-                </Card>
+            <div className="relative min-h-screen bg-background text-foreground overflow-hidden font-sans">
+                <BackgroundGrid />
+
+                {/* Top Left Glow */}
+                <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-foreground/10 blur-[120px] pointer-events-none z-0" />
+
+                {/* Center Cyan Glow */}
+                <div className="absolute top-[40%] left-[50%] translate-x-[-50%] translate-y-[-50%] w-[40%] h-[30%] rounded-full bg-primary/20 blur-[100px] pointer-events-none z-0" />
+
+                <TopHeader />
+
+                <div className="flex flex-col items-center justify-center p-4 z-10 mt-10">
+                    <Card className="w-full max-w-md bg-background/80 backdrop-blur-md">
+                        <CardHeader>
+                            <CardTitle className="text-2xl font-bold">Invalid Link</CardTitle>
+                            <CardDescription>
+                                This password reset link is missing a token. Please request a new one.
+                            </CardDescription>
+                        </CardHeader>
+                        <CardFooter>
+                            <Button className="w-full" asChild>
+                                <Link to="/forgot-password">Request Reset Link</Link>
+                            </Button>
+                        </CardFooter>
+                    </Card>
+                </div>
             </div>
         )
     }

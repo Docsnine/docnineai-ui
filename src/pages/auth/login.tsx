@@ -81,7 +81,7 @@ export function LoginPage() {
               {error && <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">{error}</div>}
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="m@example.com" {...register("email")} />
+                <Input id="email" type="email" placeholder="example@example.com" {...register("email")} />
                 {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
               </div>
               <div className="space-y-2">
@@ -91,7 +91,7 @@ export function LoginPage() {
                     Forgot password?
                   </Link>
                 </div>
-                <Input id="password" type="password" {...register("password")} />
+                <Input id="password" type="password" placeholder="*********" {...register("password")} />
                 {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
               </div>
             </CardContent>

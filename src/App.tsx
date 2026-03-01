@@ -112,7 +112,7 @@ function AppRoutes() {
           </ProtectedRoute>
         }
       >
-        <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="dashboard" element={<Navigate to="/projects" replace />} />
         <Route path="projects" element={<DashboardPage />} />
         <Route path="projects/:id" element={<ProjectOverviewPage />} />
         <Route path="projects/:id/live" element={<LiveAnalysisPage />} />
