@@ -291,12 +291,27 @@ export function NewProjectModal({ open, onOpenChange, openToGithubStep }: NewPro
             }
             window.addEventListener("message", onMessage)
 
-            // Fallback: popup closed without sending a message (user dismissed it)
+            // Fallback: popup closed without sending a postMessage.
+            // This happens when COOP headers (set by github.com) sever
+            // window.opener, causing the popup to close silently.
+            // Check GitHub status directly so we don't miss a successful connect.
             const pollClosed = setInterval(() => {
                 if (popup.closed) {
                     clearInterval(pollClosed)
                     window.removeEventListener("message", onMessage)
-                    setIsConnecting(false)
+                    // Don't just stop — check if the connection actually succeeded.
+                    githubApi.getStatus().then((s) => {
+                        if (s.connected) {
+                            setGithubConnected(true)
+                            if (s.githubUsername) setGithubUsername(s.githubUsername)
+                            setStep("github")
+                        }
+                        // If not connected the user likely dismissed/cancelled — stay put.
+                    }).catch(() => {
+                        // Status check failed — silently reset.
+                    }).finally(() => {
+                        setIsConnecting(false)
+                    })
                 }
             }, 500)
 

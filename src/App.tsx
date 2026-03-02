@@ -46,18 +46,18 @@ function AppRoutes() {
   const { initAuth, initialized } = useAuthStore()
 
   useEffect(() => {
-    // Never call initAuth() when rendering the GitHub OAuth completion page.
+    // Never call initAuth() when rendering /github/oauth/complete.
     //
-    // This page lives inside a popup (opened by new-project-modal.tsx) and
-    // must postMessage the result back to the parent window, then close.
-    // Calling initAuth() here would hit POST /auth/refresh, rotating the
-    // refresh-token cookie.  The parent still holds the *old* token, so its
-    // next refresh would be flagged as REFRESH_TOKEN_REUSED → server destroys
-    // the session entirely → parent is kicked to /login.
+    // That page handles 3 cases (see github-oauth-complete.tsx for detail):
+    //   1. Normal popup (opener intact)  → postMessage + close
+    //   2. Popup with severed opener     → window.name check + close
+    //   3. Main-tab fallback             → location.replace('/projects')
     //
-    // We guard by BOTH window.opener (normal case) AND the pathname (fallback:
-    // COOP headers on Vercel can sever window.opener even for same-origin
-    // popups that bounced through GitHub's cross-origin domain).
+    // In cases 1 & 2 the popup closes immediately — initAuth() must not run
+    // because firing POST /auth/refresh would rotate the cookie and cause
+    // REFRESH_TOKEN_REUSED in the still-open parent tab → logout.
+    // In case 3 we skip here too, then initAuth() runs properly on the
+    // subsequent hard load of /projects.
     const isOAuthCompletePage = window.location.pathname === '/github/oauth/complete'
     if ((window.opener && !window.opener.closed) || isOAuthCompletePage) {
       useAuthStore.setState({ initialized: true })
