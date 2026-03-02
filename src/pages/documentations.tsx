@@ -197,7 +197,7 @@ function EmptyState() {
             </div>
             <h2 className="text-2xl font-bold">No documentation yet</h2>
             <p className="text-muted-foreground mt-2 max-w-sm">
-                Create a project and run the analysis pipeline. Once complete, your docs will appear here.
+                Create a project and run the analysis pipeline.
             </p>
             <Button asChild className="mt-6 gap-2">
                 <Link to="/dashboard">
@@ -266,7 +266,7 @@ export function DocumentationsPage() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Documentation</h1>
-                    <p className="text-muted-foreground">
+                    <p className="text-muted-foreground mt-3">
                         All documented projects across your account.
                         {!isLoading && completedProjects.length > 0 && (
                             <span className="text-xs"> ({completedProjects.length} documented)</span>
