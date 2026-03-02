@@ -1,14 +1,14 @@
 import { useEffect } from "react"
-import { useSearchParams, useNavigate } from "react-router-dom"
+import { useSearchParams } from "react-router-dom"
 import { Loader2 } from "lucide-react"
 
 /**
- * The server redirects the popup here after the user authorises GitHub access.
- * recting to /projects with the params.
+ * The server redirects the OAuth popup to this page after GitHub authorisation.
+ * If running in a popup, it postMessages the result to the parent and closes.
+ * If the popup was blocked / opener was severed, it hard-navigates to /projects.
  */
 export function GithubOAuthCompletePage() {
     const [searchParams] = useSearchParams()
-    const navigate = useNavigate()
 
     useEffect(() => {
         const status = searchParams.get("github")   // "connected" | "error"
@@ -27,13 +27,19 @@ export function GithubOAuthCompletePage() {
             }
             window.close()
         } else {
-            // No opener — popup was blocked or the link was opened directly.
-            // Redirect to /projects so the dashboard can handle the params.
+            // No opener — either the popup was blocked (full-page nav happened)
+            // or COOP headers severed window.opener after bouncing through GitHub.
+            //
+            // Use a hard navigation instead of React Router's navigate().
+            // This triggers a fresh page load where initAuth() will run normally
+            // to restore the session before ProtectedRoute renders — avoiding the
+            // "redirected to /login because isAuthenticated is false" issue that
+            // occurs when we skipped initAuth() in App.tsx for this route.
             const qs = new URLSearchParams()
             if (status) qs.set("github", status)
             if (user) qs.set("user", user)
             if (msg) qs.set("msg", msg)
-            navigate(`/projects?${qs.toString()}`, { replace: true })
+            window.location.replace(`/projects?${qs.toString()}`)
         }
     }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
