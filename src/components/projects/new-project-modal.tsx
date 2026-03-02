@@ -128,9 +128,10 @@ function RepoList({ repos, loading, hasNextPage, selectedRepo, onSelect, onLoadM
 interface NewProjectModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
+    openToGithubStep?: boolean
 }
 
-export function NewProjectModal({ open, onOpenChange }: NewProjectModalProps) {
+export function NewProjectModal({ open, onOpenChange, openToGithubStep }: NewProjectModalProps) {
     const navigate = useNavigate()
     const { createProject } = useProjectStore()
 
@@ -163,6 +164,8 @@ export function NewProjectModal({ open, onOpenChange }: NewProjectModalProps) {
         githubApi.getStatus().then((s) => {
             setGithubConnected(s.connected)
             if (s.githubUsername) setGithubUsername(s.githubUsername)
+            // If opened after OAuth callback and GitHub is now connected, skip straight to repo picker
+            if (openToGithubStep && s.connected) setStep("github")
         }).catch(() => { /* not connected */ })
     }, [open])
 

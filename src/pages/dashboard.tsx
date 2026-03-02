@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { formatDistanceToNow } from "date-fns"
 import { useProjectStore, ProjectStatus } from "@/store/projects"
 import { Button } from "@/components/ui/button"
@@ -57,8 +57,11 @@ export function DashboardPage() {
     const { projects, total, totalPages, page, isLoading, error, fetchProjects, deleteProject, archiveProject, retryProject, sharedProjects, sharedLoading, fetchSharedProjects } =
         useProjectStore()
     const navigate = useNavigate()
+    const [searchParams, setSearchParams] = useSearchParams()
 
     const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false)
+    const [openModalToGithubStep, setOpenModalToGithubStep] = useState(false)
+    const [githubNotice, setGithubNotice] = useState<{ type: "success" | "error"; message: string } | null>(null)
     const [searchQuery, setSearchQuery] = useState("")
     const [statusFilter, setStatusFilter] = useState("all")
     const [sortBy, setSortBy] = useState("updated")
@@ -67,6 +70,24 @@ export function DashboardPage() {
     const [actionLoading, setActionLoading] = useState<string | null>(null)
 
     const debouncedSearch = useDebounce(searchQuery, 400)
+
+    // Handle GitHub OAuth return (?github=connected or ?github=error)
+    useEffect(() => {
+        const githubStatus = searchParams.get("github")
+        if (!githubStatus) return
+        const user = searchParams.get("user")
+        const msg = searchParams.get("msg")
+        setSearchParams({}, { replace: true }) // clean URL
+        if (githubStatus === "connected") {
+            setGithubNotice({ type: "success", message: `GitHub connected${user ? ` as @${user}` : ""}! Select a repository to continue.` })
+            setOpenModalToGithubStep(true)
+            setIsNewProjectModalOpen(true)
+            setTimeout(() => setGithubNotice(null), 6000)
+        } else if (githubStatus === "error") {
+            setGithubNotice({ type: "error", message: msg ?? "GitHub connection failed. Please try again." })
+            setTimeout(() => setGithubNotice(null), 8000)
+        }
+    }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
     // Fetch whenever filters change
     const doFetch = useCallback(() => {
@@ -174,6 +195,17 @@ export function DashboardPage() {
 
     return (
         <div className="space-y-6">
+            {/* GitHub OAuth return banner */}
+            {githubNotice && (
+                <div className={`flex items-center gap-3 rounded-lg border px-4 py-3 text-sm ${
+                    githubNotice.type === "success"
+                        ? "border-green-500/20 bg-green-500/10 text-green-700 dark:text-green-400"
+                        : "border-destructive/20 bg-destructive/10 text-destructive"
+                }`}>
+                    <span className="text-base">{githubNotice.type === "success" ? "✅" : "❌"}</span>
+                    <span>{githubNotice.message}</span>
+                </div>
+            )}
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
@@ -393,7 +425,14 @@ export function DashboardPage() {
                 </>
             )}
 
-            <NewProjectModal open={isNewProjectModalOpen} onOpenChange={setIsNewProjectModalOpen} />
+            <NewProjectModal
+                open={isNewProjectModalOpen}
+                onOpenChange={(v) => {
+                    setIsNewProjectModalOpen(v)
+                    if (!v) setOpenModalToGithubStep(false)
+                }}
+                openToGithubStep={openModalToGithubStep}
+            />
 
             {/* ── Shared with Me ────────────────────────────────── */}
             {(sharedLoading || sharedProjects.length > 0) && (
