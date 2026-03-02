@@ -19,20 +19,27 @@ export default defineConfig(({ mode }) => {
     changeOrigin: true,
     secure: false,
     bypass(req: { url?: string; headers?: Record<string, string> }) {
-      // Always serve the SPA for browser navigations.
+      // OAuth callback routes MUST be forwarded to the backend even when the
+      // browser makes a text/html GET (e.g. GitHub redirecting the popup back).
+      // Never bypass these — let them go to Express.
+      if (req.url?.startsWith("/github/oauth/callback")) return undefined;
+      if (req.url?.startsWith("/auth/github/callback")) return undefined;
+      if (req.url?.startsWith("/auth/google/callback")) return undefined;
+
+      // Always serve the SPA for all other browser navigations.
       if (req.headers?.accept?.includes("text/html")) return req.url;
       // Any additional path-specific bypass rules.
       return extraBypass?.(req);
     },
   });
 
-  const proxyConfig: Record<string, object> = {
+  const proxyConfig: Record<string, object> = BACKEND_URL ? {
     "/auth":     makeProxy(),
     "/github":   makeProxy(),
     "/projects": makeProxy(),
     "/api":      makeProxy(),
     "/health":   makeProxy(),
-  };
+  } : {};
 
   return {
     plugins: [react(), tailwindcss()],

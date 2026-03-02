@@ -249,7 +249,57 @@ export function NewProjectModal({ open, onOpenChange, openToGithubStep }: NewPro
         setApiError(null)
         try {
             const data = await githubApi.getOAuthStartUrl()
-            window.location.href = data.url
+
+            // Open a popup instead of navigating away — preserves the session
+            // (access token stays in memory) and avoids full page reload on return.
+            const width = 620, height = 720
+            const left = Math.round(window.screenX + (window.outerWidth - width) / 2)
+            const top  = Math.round(window.screenY + (window.outerHeight - height) / 2)
+            const popup = window.open(
+                data.url,
+                "github-oauth",
+                `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`,
+            )
+
+            if (!popup || popup.closed) {
+                // Popup was blocked — fall back to full-page navigation
+                window.location.href = data.url
+                return
+            }
+
+            // Listen for postMessage sent by /github/oauth/complete
+            const onMessage = (event: MessageEvent) => {
+                if (event.origin !== window.location.origin) return
+                if (event.data?.type !== "github-oauth-complete") return
+                window.removeEventListener("message", onMessage)
+                clearInterval(pollClosed)
+                setIsConnecting(false)
+
+                if (event.data.status === "connected") {
+                    githubApi.getStatus().then((s) => {
+                        if (s.connected) {
+                            setGithubConnected(true)
+                            if (s.githubUsername) setGithubUsername(s.githubUsername)
+                            setStep("github")
+                        } else {
+                            setApiError("GitHub connected but status could not be confirmed. Please try again.")
+                        }
+                    }).catch(() => setApiError("Failed to verify GitHub connection."))
+                } else {
+                    setApiError(event.data.msg ?? "GitHub connection failed. Please try again.")
+                }
+            }
+            window.addEventListener("message", onMessage)
+
+            // Fallback: popup closed without sending a message (user dismissed it)
+            const pollClosed = setInterval(() => {
+                if (popup.closed) {
+                    clearInterval(pollClosed)
+                    window.removeEventListener("message", onMessage)
+                    setIsConnecting(false)
+                }
+            }, 500)
+
         } catch (err: any) {
             setApiError(err instanceof ApiException ? err.message : "Failed to start GitHub OAuth.")
             setIsConnecting(false)

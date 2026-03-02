@@ -23,6 +23,7 @@ import { TermsPage } from "@/pages/terms"
 import { PrivacyPage } from "@/pages/privacy"
 import { ContactPage } from "@/pages/contact"
 import { AcceptInvitePage } from "@/pages/auth/accept-invite"
+import { GithubOAuthCompletePage } from "@/pages/github-oauth-complete"
 
 /**
  * ProtectedRoute — redirects unauthenticated users to /login.
@@ -75,6 +76,7 @@ function AppRoutes() {
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/contact" element={<ContactPage />} />
       <Route path="/share/accept/:token" element={<AcceptInvitePage />} />
+      <Route path="/github/oauth/complete" element={<GithubOAuthCompletePage />} />
 
       {/* Protected Routes — nested under DashboardLayout */}
       <Route
