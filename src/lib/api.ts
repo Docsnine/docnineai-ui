@@ -523,6 +523,58 @@ export const versionsApi = {
     ),
 }
 
+// ── Attachments (Other Docs) ──────────────────────────────────────────────
+
+export interface ApiAttachment {
+  _id: string
+  projectId: string
+  userId: string
+  uploaderName: string
+  fileName: string
+  mimeType: string
+  size: number // bytes
+  description: string
+  createdAt: string
+  updatedAt: string
+}
+
+export const attachmentsApi = {
+  /** List all attachments for a project (no file data). */
+  list: (projectId: string) =>
+    apiFetch<{ attachments: ApiAttachment[] }>(`/projects/${projectId}/attachments`),
+
+  /**
+   * Upload a file. `description` is optional.
+   * Uses FormData so Content-Type is set to multipart/form-data automatically.
+   */
+  upload: (projectId: string, file: File, description = '') => {
+    const fd = new FormData()
+    fd.append('file', file)
+    if (description) fd.append('description', description)
+    return apiFetch<{ attachment: ApiAttachment }>(
+      `/projects/${projectId}/attachments`,
+      { method: 'POST', body: fd },
+    )
+  },
+
+  /** Returns the URL to stream / download the raw file. */
+  downloadUrl: (projectId: string, attachmentId: string) =>
+    `${API_BASE}/projects/${projectId}/attachments/${attachmentId}`,
+
+  /** Update only the description of an attachment. */
+  updateDescription: (projectId: string, attachmentId: string, description: string) =>
+    apiFetch<{ attachment: ApiAttachment }>(
+      `/projects/${projectId}/attachments/${attachmentId}`,
+      { method: 'PATCH', body: JSON.stringify({ description }) },
+    ),
+
+  /** Permanently delete an attachment. */
+  delete: (projectId: string, attachmentId: string) =>
+    apiFetch<void>(`/projects/${projectId}/attachments/${attachmentId}`, {
+      method: 'DELETE',
+    }),
+}
+
 // ── Chat ──────────────────────────────────────────────────────────────────
 
 /**

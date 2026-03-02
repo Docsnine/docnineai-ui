@@ -38,6 +38,7 @@ import { cn } from "@/lib/utils"
 import { AIChatPanel } from "@/components/projects/ai-chat"
 import { DocRenderer } from "@/components/projects/DocRenderer"
 import { VersionHistoryPanel } from "@/components/projects/version-history-panel"
+import { OtherDocsPanel } from "@/components/projects/other-docs-panel"
 
 // ── Tab definitions ──────────────────────────────────────────────────────────
 type DocTab = "readme" | "api" | "schema" | "internal" | "security" | "other_docs"
@@ -318,7 +319,7 @@ export function DocumentationViewerPage() {
       if (vSection) {
         versionsApi.list(id, vSection).then((r) => {
           setVersionCounts((prev) => ({ ...prev, [vSection]: r.total }))
-        }).catch(() => {})
+        }).catch(() => { })
       }
       setIsEditMode(false)
     } catch (err: any) {
@@ -357,7 +358,7 @@ export function DocumentationViewerPage() {
     if (id && sectionName) {
       versionsApi.list(id, sectionName).then((r) => {
         setVersionCounts((prev) => ({ ...prev, [sectionName]: r.total }));
-      }).catch(() => {});
+      }).catch(() => { });
     }
   }
 
@@ -532,7 +533,7 @@ export function DocumentationViewerPage() {
             </span>
           )}
 
-          {activeTab !== "security" && (
+          {activeTab !== "security" && activeTab !== "other_docs" && (
             isEditMode ? (
               <>
                 <Button variant="outline" size="sm" onClick={handleCancelEdit}>
@@ -596,7 +597,7 @@ export function DocumentationViewerPage() {
                 <ExternalLink className="h-4 w-4" /> Push to Notion
               </button>
               <button className="flex w-full items-center gap-2 px-3 py-2 hover:bg-muted transition-colors" onClick={handleExportGoogleDocs}>
-                <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="#4285F4" opacity=".3"/><path d="M14 2v6h6" fill="none" stroke="#4285F4" strokeWidth="1.5"/><path d="M16 13H8M16 17H8M10 9H8" fill="none" stroke="#4285F4" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="#4285F4" opacity=".3" /><path d="M14 2v6h6" fill="none" stroke="#4285F4" strokeWidth="1.5" /><path d="M16 13H8M16 17H8M10 9H8" fill="none" stroke="#4285F4" strokeWidth="1.5" strokeLinecap="round" /></svg>
                 Export to Google Docs
               </button>
             </div>
@@ -726,17 +727,9 @@ export function DocumentationViewerPage() {
                 )
               )}
 
-              {/* Security tab */}
-              {activeTab === "other_docs" && (
-                <div className="space-y-6">
-                  <div>
-                    <h2 className="text-2xl font-bold tracking-tight mb-2">Other Documentation</h2>
-                    <p className="text-muted-foreground">Attached documentation for this project.</p>
-                  </div>
-                  <div className="prose prose-slate dark:prose-invert max-w-none">
-                    <DocRenderer content={editedContent.other_docs} />
-                  </div>
-                </div>
+              {/* Other Docs tab — file attachments panel */}
+              {activeTab === "other_docs" && project && (
+                <OtherDocsPanel projectId={project._id} />
               )}
             </div>
           </div>
