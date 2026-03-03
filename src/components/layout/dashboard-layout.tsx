@@ -117,11 +117,11 @@ export function DashboardLayout() {
           {/* Right: search (desktop) + avatar */}
           <div className="flex items-center gap-3">
             <div className="relative w-56 hidden md:block">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
                 placeholder="Search projects..."
-                className="w-full bg-muted/50 pl-9 border-border focus:ring-0 focus-visible:ring-1"
+                className="w-full bg-muted/50 pl-9 border-border focus:ring-0 focus-visible:ring-1 rounded-2xl"
                 value={searchValue}
                 onChange={handleSearchChange}
               />

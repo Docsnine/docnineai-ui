@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
 import { useParams, Link } from "react-router-dom"
 import { useProjectStore, mapApiStatus } from "@/store/projects"
-import { projectsApi, versionsApi, ApiException, ApiProject, ApiShare, sharingApi, portalApi, type ApiPortal, type ApiProjectEditedSection } from "@/lib/api"
+import { projectsApi, versionsApi, ApiException, ApiProject, ApiShare, sharingApi, portalApi, apiSpecApi, type ApiPortal, type ApiSpec, type ApiProjectEditedSection } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -48,6 +48,8 @@ import { OtherDocsPanel } from "@/components/projects/other-docs-panel"
 import { useDocTrackerStore } from "@/store/doc-tracker"
 import { useAuthStore } from "@/store/auth"
 import { PortalSettingsModal } from "@/components/projects/portal-settings-modal"
+import { ApiSpecImportModal } from "@/components/projects/api-spec-import-modal"
+import { ApiReferenceViewer } from "@/components/projects/api-reference-viewer"
 
 // ── Status-change modal ───────────────────────────────────────────────────────
 interface StatusChangeModalProps {
@@ -360,6 +362,13 @@ export function DocumentationViewerPage() {
   const [portalModalOpen, setPortalModalOpen] = useState(false)
   const [isOwner, setIsOwner] = useState(false)
 
+  // API Spec (FT4)
+  const [apiSpec, setApiSpec] = useState<ApiSpec | null>(null)
+  const [apiSpecLoading, setApiSpecLoading] = useState(false)
+  const [apiSpecImportOpen, setApiSpecImportOpen] = useState(false)
+  const [apiSubTab, setApiSubTab] = useState<"document" | "spec">("document")
+  const [syncingSpec, setSyncingSpec] = useState(false)
+
   // Editable content per tab (initialized from project data)
   const [editedContent, setEditedContent] = useState<Record<DocTab, string>>({
     readme: "",
@@ -407,6 +416,11 @@ export function DocumentationViewerPage() {
           }),
         );
         setVersionCounts(counts);
+
+        // Load API spec (FT4)
+        apiSpecApi.get(data.project._id)
+          .then((r) => setApiSpec(r.spec))
+          .catch(() => { }) // not fatal if spec not found
       })
       .finally(() => setIsLoading(false));
   }, [id, getProjectData])
@@ -653,15 +667,10 @@ export function DocumentationViewerPage() {
 
   // ── Main render ───────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] max-w-7xl mx-auto">
-      {/* Topbar */}
-      <div className="flex items-center justify-between shrink-0 mb-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild className="-ml-2">
-            <Link to={`/projects/${project._id}`}>
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-          </Button>
+    <div>
+      {/* Top bar */}
+      <div className="md:flex items-center justify-between border-b border-border/90 bg-background/50 backdrop-blur-sm container mx-auto max-w-7xl pb-6">
+        <div className="flex items-center">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Documentation</h1>
             <p className="text-sm text-muted-foreground">{project.meta?.name}</p>
@@ -820,204 +829,285 @@ export function DocumentationViewerPage() {
         </div>
       </div>
 
-      {/* Main layout: sidebar + content + chat */}
-      <div className="flex flex-1 overflow-hidden border border-border rounded-xl bg-card shadow-sm">
-        {/* Sidebar */}
-        {isSidebarOpen && (
-          <div className="w-56 border-r border-border bg-muted/20 flex flex-col shrink-0">
-            <div className="p-4 border-b border-border font-semibold flex items-center justify-between text-sm">
-              Contents
-              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsSidebarOpen(false)}>
+      <div className="flex flex-col h-[calc(100vh-8rem)] max-w-7xl mx-auto">
+        {/* Main layout: sidebar + content + chat */}
+        <div className="flex flex-1 overflow-hidden border border-border rounded-2xl bg-card mt-6">
+          {/* Sidebar */}
+          {isSidebarOpen && (
+            <div className="w-56 border-r border-border bg-muted/20 flex flex-col shrink-0">
+              <div className="p-4 border-b border-border font-semibold flex items-center justify-between text-sm">
+                Contents
+                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setIsSidebarOpen(false)}>
+                  <Menu className="h-4 w-4" />
+                </Button>
+              </div>
+              <nav className="flex-1 overflow-y-auto p-2 space-y-1">
+                {availableTabs.map((tab) => {
+                  const Icon = tab.icon
+                  const sectionName = TAB_TO_SECTION[tab.key]
+                  const vCount = sectionName ? (versionCounts[sectionName] ?? 0) : 0
+                  const isStale = sectionName
+                    ? editedSections.some((e) => e.section === sectionName && e.stale)
+                    : false
+                  return (
+                    <button
+                      key={tab.key}
+                      onClick={() => { setActiveTab(tab.key); setIsEditMode(false) }}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors",
+                        activeTab === tab.key
+                          ? tab.key === "security"
+                            ? "bg-destructive/10 text-destructive font-medium"
+                            : "bg-primary/10 text-primary font-medium"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      )}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span className="flex-1 text-left truncate">{tab.label}</span>
+                      {sectionName && (() => {
+                        const de = getDocEntry(id ?? "", sectionName)
+                        return de && de.status !== "draft" ? <DocStatusDot status={de.status} /> : null
+                      })()}
+                      {isStale && (
+                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" title="Stale — AI has newer content" />
+                      )}
+                      {vCount > 1 && (
+                        <span className="text-[10px] font-mono px-1 py-0.5 rounded bg-muted-foreground/15 text-muted-foreground shrink-0">
+                          {vCount > 20 ? "20+" : vCount}
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
+                {availableTabs.length === 0 && (
+                  <p className="text-xs text-muted-foreground px-3 pt-2">No documentation available yet.</p>
+                )}
+              </nav>
+
+            </div>
+          )}
+
+          {/* Content area */}
+          <div className="flex-1 flex flex-col overflow-hidden relative">
+            {!isSidebarOpen && (
+              <Button
+                variant="outline"
+                size="icon"
+                className="absolute top-4 left-4 z-10 h-8 w-8 rounded-full shadow-sm"
+                onClick={() => setIsSidebarOpen(true)}
+              >
                 <Menu className="h-4 w-4" />
               </Button>
-            </div>
-            <nav className="flex-1 overflow-y-auto p-2 space-y-1">
-              {availableTabs.map((tab) => {
-                const Icon = tab.icon
-                const sectionName = TAB_TO_SECTION[tab.key]
-                const vCount = sectionName ? (versionCounts[sectionName] ?? 0) : 0
-                const isStale = sectionName
-                  ? editedSections.some((e) => e.section === sectionName && e.stale)
-                  : false
-                return (
-                  <button
-                    key={tab.key}
-                    onClick={() => { setActiveTab(tab.key); setIsEditMode(false) }}
-                    className={cn(
-                      "w-full flex items-center gap-2 px-3 py-2 text-sm rounded-md transition-colors",
-                      activeTab === tab.key
-                        ? tab.key === "security"
-                          ? "bg-destructive/10 text-destructive font-medium"
-                          : "bg-primary/10 text-primary font-medium"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                    )}
-                  >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    <span className="flex-1 text-left truncate">{tab.label}</span>
-                    {sectionName && (() => {
-                      const de = getDocEntry(id ?? "", sectionName)
-                      return de && de.status !== "draft" ? <DocStatusDot status={de.status} /> : null
-                    })()}
-                    {isStale && (
-                      <span className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" title="Stale — AI has newer content" />
-                    )}
-                    {vCount > 1 && (
-                      <span className="text-[10px] font-mono px-1 py-0.5 rounded bg-muted-foreground/15 text-muted-foreground shrink-0">
-                        {vCount > 20 ? "20+" : vCount}
-                      </span>
-                    )}
-                  </button>
-                )
-              })}
-              {availableTabs.length === 0 && (
-                <p className="text-xs text-muted-foreground px-3 pt-2">No documentation available yet.</p>
-              )}
-            </nav>
+            )}
 
+            {/* Stale section banner */}
+            {showStaleBanner && (
+              <StaleSectionBanner
+                changeSummary={staleSummary}
+                accepting={acceptingAI}
+                onViewDiff={() => setShowStaleDiff(true)}
+                onAcceptAI={handleAcceptAI}
+                onDismiss={() => setDismissedStaleTabs((prev) => new Set([...prev, activeTab]))}
+              />
+            )}
+
+            {/* ── API sub-tabs: Document / Api Spec ── */}
+            {activeTab === "api" && (
+              <div className="flex border-b border-border px-4 shrink-0 mt-3">
+                <button
+                  onClick={() => setApiSubTab("document")}
+                  className={cn(
+                    "px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors",
+                    apiSubTab === "document"
+                      ? "border-primary text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Document
+                </button>
+                <button
+                  onClick={() => setApiSubTab("spec")}
+                  className={cn(
+                    "px-4 py-3 text-sm font-medium border-b-2 -mb-px transition-colors",
+                    apiSubTab === "spec"
+                      ? "border-primary text-foreground"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Api Spec
+                </button>
+              </div>
+            )}
+
+            {/* ── API Spec viewer (shown when Api Spec sub-tab is active) ── */}
+            {activeTab === "api" && apiSubTab === "spec" && (
+              <div className="flex-1 overflow-hidden flex flex-col">
+                {apiSpec ? (
+                  <ApiReferenceViewer
+                    spec={apiSpec}
+                    projectId={id ?? ""}
+                    canEdit={true}
+                    onReimport={() => setApiSpecImportOpen(true)}
+                    onSync={apiSpec.source === "url" ? async () => {
+                      if (!id) return
+                      setSyncingSpec(true)
+                      try { const r = await apiSpecApi.sync(id); setApiSpec(r.spec) }
+                      catch { /* ignore */ } finally { setSyncingSpec(false) }
+                    } : undefined}
+                    onDelete={isOwner ? async () => {
+                      if (!id) return
+                      await apiSpecApi.delete(id).catch(() => { })
+                      setApiSpec(null)
+                    } : undefined}
+                    isSyncing={syncingSpec}
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center flex-1 gap-3 text-muted-foreground">
+                    <Info className="h-8 w-8" />
+                    <p className="text-sm">No API spec imported yet.</p>
+                    <Button size="sm" variant="outline" onClick={() => setApiSpecImportOpen(true)}>
+                      Import Spec
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Normal content (all tabs; hidden when API Spec sub-tab is open) */}
+            {!(activeTab === "api" && apiSubTab === "spec") && (
+              <div className={cn("flex-1 overflow-y-auto", !isEditMode && "p-6 md:p-10")}>
+                <div className={cn("mx-auto", "h-full flex flex-col")}>
+                  {/* Markdown tabs (readme, api, schema, internal) */}
+                  {["readme", "api", "schema", "internal"].includes(activeTab) && (
+                    isEditMode ? (
+                      <div className="flex flex-col h-full border-0">
+                        <MarkdownToolbar onInsert={insertMarkdown} />
+                        <textarea
+                          id="markdown-editor"
+                          className="flex-1 w-full p-6 font-mono text-sm bg-background border-0 focus:outline-none resize-none"
+                          value={editedContent[activeTab]}
+                          onChange={(e) => setEditedContent((c) => ({ ...c, [activeTab]: e.target.value }))}
+                        />
+                      </div>
+                    ) : effectiveOutput && getEffectiveOutputTabContent(effectiveOutput, activeTab) ? (
+                      <div className="prose prose-slate dark:prose-invert max-w-none">
+                        <DocRenderer content={getEffectiveOutputTabContent(effectiveOutput, activeTab)} />
+                      </div>
+                    ) : project && mapApiStatus(project.status) === "completed" ? (
+                      <div className="flex flex-col items-center justify-center py-24 text-center text-muted-foreground">
+                        <Info className="h-10 w-10 mb-3" />
+                        <p>No content generated for this section.</p>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center h-full text-muted-foreground">
+                        <Loader2 className="h-5 w-5 animate-spin mr-2" /> Waiting for content…
+                      </div>
+                    )
+                  )}
+
+                  {/* Security tab */}
+                  {activeTab === "security" && (
+                    editedContent.security ? (
+                      <div className="space-y-6">
+                        <div className="prose prose-slate dark:prose-invert max-w-none">
+                          <DocRenderer content={editedContent.security} />
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center py-24 text-center text-muted-foreground">
+                        <ShieldAlert className="h-10 w-10 mb-3" />
+                        <p>No security report available.</p>
+                      </div>
+                    )
+                  )}
+
+                  {/* Other Docs tab — file attachments panel */}
+                  {activeTab === "other_docs" && project && (
+                    <OtherDocsPanel projectId={project._id} />
+                  )}
+                </div>
+              </div>
+            )} {/* end: !(api && apiSubTab === spec) */}
           </div>
-        )}
 
-        {/* Content area */}
-        <div className="flex-1 flex flex-col overflow-hidden relative">
-          {!isSidebarOpen && (
-            <Button
-              variant="outline"
-              size="icon"
-              className="absolute top-4 left-4 z-10 h-8 w-8 rounded-full shadow-sm"
-              onClick={() => setIsSidebarOpen(true)}
-            >
-              <Menu className="h-4 w-4" />
-            </Button>
+          {/* Version history panel */}
+          {isHistoryOpen && project && activeSectionName && (
+            <div className="w-80 shrink-0 flex flex-col overflow-hidden">
+              <VersionHistoryPanel
+                projectId={project._id}
+                section={activeSectionName}
+                sectionLabel={activeTabDef?.label ?? activeTab}
+                onClose={() => setIsHistoryOpen(false)}
+                onRestored={handleVersionRestored}
+              />
+            </div>
           )}
 
-          {/* Stale section banner */}
-          {showStaleBanner && (
-            <StaleSectionBanner
-              changeSummary={staleSummary}
-              accepting={acceptingAI}
-              onViewDiff={() => setShowStaleDiff(true)}
-              onAcceptAI={handleAcceptAI}
-              onDismiss={() => setDismissedStaleTabs((prev) => new Set([...prev, activeTab]))}
-            />
-          )}
-
-          <div className={cn("flex-1 overflow-y-auto", !isEditMode && "p-6 md:p-10")}>
-            <div className={cn("mx-auto", "h-full flex flex-col")}>
-              {/* Markdown tabs (readme, api, schema, internal) */}
-              {["readme", "api", "schema", "internal"].includes(activeTab) && (
-                isEditMode ? (
-                  <div className="flex flex-col h-full border-0">
-                    <MarkdownToolbar onInsert={insertMarkdown} />
-                    <textarea
-                      id="markdown-editor"
-                      className="flex-1 w-full p-6 font-mono text-sm bg-background border-0 focus:outline-none resize-none"
-                      value={editedContent[activeTab]}
-                      onChange={(e) => setEditedContent((c) => ({ ...c, [activeTab]: e.target.value }))}
-                    />
-                  </div>
-                ) : effectiveOutput && getEffectiveOutputTabContent(effectiveOutput, activeTab) ? (
-                  <div className="prose prose-slate dark:prose-invert max-w-none">
-                    <DocRenderer content={getEffectiveOutputTabContent(effectiveOutput, activeTab)} />
-                  </div>
-                ) : project && mapApiStatus(project.status) === "completed" ? (
-                  <div className="flex flex-col items-center justify-center py-24 text-center text-muted-foreground">
-                    <Info className="h-10 w-10 mb-3" />
-                    <p>No content generated for this section.</p>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-muted-foreground">
-                    <Loader2 className="h-5 w-5 animate-spin mr-2" /> Waiting for content…
-                  </div>
-                )
-              )}
-
-              {/* Security tab */}
-              {activeTab === "security" && (
-                editedContent.security ? (
-                  <div className="space-y-6">
-                    <div className="prose prose-slate dark:prose-invert max-w-none">
-                      <DocRenderer content={editedContent.security} />
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-24 text-center text-muted-foreground">
-                    <ShieldAlert className="h-10 w-10 mb-3" />
-                    <p>No security report available.</p>
-                  </div>
-                )
-              )}
-
-              {/* Other Docs tab — file attachments panel */}
-              {activeTab === "other_docs" && project && (
-                <OtherDocsPanel projectId={project._id} />
-              )}
+          {/* AI Chat panel */}
+          {isChatOpen && project && (
+            <div className="w-80 border-l border-border bg-card flex flex-col shrink-0">
+              <AIChatPanel
+                project={project}
+                activeSection={activeSectionName ?? ""}
+                activeSectionContent={getCurrentContent()}
+                onClose={() => setIsChatOpen(false)}
+              />
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Version history panel */}
-        {isHistoryOpen && project && activeSectionName && (
-          <div className="w-80 shrink-0 flex flex-col overflow-hidden">
-            <VersionHistoryPanel
-              projectId={project._id}
-              section={activeSectionName}
-              sectionLabel={activeTabDef?.label ?? activeTab}
-              onClose={() => setIsHistoryOpen(false)}
-              onRestored={handleVersionRestored}
-            />
-          </div>
+        {/* Stale diff modal (full-screen overlay) */}
+        {showStaleDiff && activeTabDef && (
+          <StaleDiffModal
+            sectionLabel={activeTabDef.label}
+            userContent={userEditContent}
+            aiContent={aiSnapshotContent}
+            accepting={acceptingAI}
+            onClose={() => setShowStaleDiff(false)}
+            onAcceptAI={handleAcceptAI}
+          />
         )}
 
-        {/* AI Chat panel */}
-        {isChatOpen && project && (
-          <div className="w-80 border-l border-border bg-card flex flex-col shrink-0">
-            <AIChatPanel
-              project={project}
-              activeSection={activeSectionName ?? ""}
-              activeSectionContent={getCurrentContent()}
-              onClose={() => setIsChatOpen(false)}
-            />
-          </div>
+        {/* Portal settings modal */}
+        {isOwner && id && (
+          <PortalSettingsModal
+            isOpen={portalModalOpen}
+            onClose={() => setPortalModalOpen(false)}
+            projectId={id}
+            initialPortal={portal}
+            onPublishChange={(updated) => setPortal(updated)}
+          />
         )}
+
+        {/* Status-change modal */}
+        {/* API Spec import modal (FT4) */}
+        {id && (
+          <ApiSpecImportModal
+            projectId={id}
+            open={apiSpecImportOpen}
+            onClose={() => setApiSpecImportOpen(false)}
+            existingSpec={apiSpec}
+            onImported={(spec) => {
+              setApiSpec(spec)
+              setApiSubTab("spec")
+            }}
+          />
+        )}
+
+        <StatusChangeModal
+          isOpen={statusModal.open}
+          pendingStatus={statusModal.pendingStatus}
+          members={projectMembers}
+          loadingMembers={loadingMembers}
+          onClose={() => setStatusModal({ open: false, pendingStatus: null })}
+          onConfirm={(note, taggedMember) => {
+            if (!id || !activeSectionName || !statusModal.pendingStatus) return
+            setDocStatus(id, activeSectionName, statusModal.pendingStatus, user?.name ?? user?.email, note || undefined)
+            if (taggedMember) setDocAssignee(id, activeSectionName, taggedMember)
+            setStatusModal({ open: false, pendingStatus: null })
+          }}
+        />
       </div>
-
-      {/* Stale diff modal (full-screen overlay) */}
-      {showStaleDiff && activeTabDef && (
-        <StaleDiffModal
-          sectionLabel={activeTabDef.label}
-          userContent={userEditContent}
-          aiContent={aiSnapshotContent}
-          accepting={acceptingAI}
-          onClose={() => setShowStaleDiff(false)}
-          onAcceptAI={handleAcceptAI}
-        />
-      )}
-
-      {/* Portal settings modal */}
-      {isOwner && id && (
-        <PortalSettingsModal
-          isOpen={portalModalOpen}
-          onClose={() => setPortalModalOpen(false)}
-          projectId={id}
-          initialPortal={portal}
-          onPublishChange={(updated) => setPortal(updated)}
-        />
-      )}
-
-      {/* Status-change modal */}
-      <StatusChangeModal
-        isOpen={statusModal.open}
-        pendingStatus={statusModal.pendingStatus}
-        members={projectMembers}
-        loadingMembers={loadingMembers}
-        onClose={() => setStatusModal({ open: false, pendingStatus: null })}
-        onConfirm={(note, taggedMember) => {
-          if (!id || !activeSectionName || !statusModal.pendingStatus) return
-          setDocStatus(id, activeSectionName, statusModal.pendingStatus, user?.name ?? user?.email, note || undefined)
-          if (taggedMember) setDocAssignee(id, activeSectionName, taggedMember)
-          setStatusModal({ open: false, pendingStatus: null })
-        }}
-      />
     </div>
   )
 }

@@ -836,3 +836,160 @@ export const publicPortalApi = {
       body: JSON.stringify({ password }),
     }),
 }
+
+// ── API Spec (OpenAPI / Postman importer) ─────────────────────
+
+export type ApiSpecSource = 'file' | 'url' | 'raw'
+export type ApiSpecVersion = '2.0' | '3.0' | '3.1' | 'postman' | 'unknown'
+
+export interface ApiSpecParameter {
+  in: 'path' | 'query' | 'header' | 'cookie' | 'body'
+  name: string
+  required: boolean
+  description: string
+  schema: Record<string, unknown>
+  example?: unknown
+}
+
+export interface ApiSpecRequestBodyContent {
+  schema: Record<string, unknown>
+  example?: unknown
+}
+
+export interface ApiSpecRequestBody {
+  required: boolean
+  description: string
+  content: Record<string, ApiSpecRequestBodyContent>
+}
+
+export interface ApiSpecResponseContent {
+  schema: Record<string, unknown>
+  example?: unknown
+}
+
+export interface ApiSpecResponse {
+  description: string
+  content: Record<string, ApiSpecResponseContent>
+}
+
+export interface ApiSpecEndpoint {
+  id: string           // "GET /users/{id}"
+  method: string       // uppercase
+  path: string
+  summary: string
+  description: string
+  tags: string[]
+  operationId: string
+  parameters: ApiSpecParameter[]
+  requestBody: ApiSpecRequestBody | null
+  responses: Record<string, ApiSpecResponse>
+  security: unknown
+  deprecated: boolean
+  customNote: string
+}
+
+export interface ApiSpecInfo {
+  title: string
+  version: string
+  description: string
+  contact?: unknown
+  license?: unknown
+  termsOfService?: string
+}
+
+export interface ApiSpecServer {
+  url: string
+  description: string
+}
+
+export interface ApiSpecTag {
+  name: string
+  description: string
+}
+
+export interface ApiSpec {
+  _id: string
+  projectId: string
+  source: ApiSpecSource
+  sourceUrl?: string
+  specVersion: ApiSpecVersion
+  info: ApiSpecInfo
+  servers: ApiSpecServer[]
+  tags: ApiSpecTag[]
+  endpoints: ApiSpecEndpoint[]
+  schemas: Record<string, unknown>
+  securitySchemes: Record<string, unknown>
+  autoSync: boolean
+  lastSyncedAt?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface TryItResult {
+  status: number
+  headers: Record<string, string>
+  body: string
+}
+
+// ── apiSpecApi ────────────────────────────────────────────────
+
+export const apiSpecApi = {
+  /** Get the imported spec for a project (null if none). */
+  get: (projectId: string) =>
+    apiFetch<{ spec: ApiSpec | null }>(`/projects/${projectId}/apispec`),
+
+  /** Import via file (pass FormData), URL, or raw text. */
+  importFile: (projectId: string, formData: FormData) =>
+    apiFetch<{ spec: ApiSpec }>(`/projects/${projectId}/apispec/import`, {
+      method: 'POST',
+      body: formData,
+      // Let browser set Content-Type with boundary
+      headers: {},
+    }),
+
+  importUrl: (projectId: string, url: string, autoSync = false) =>
+    apiFetch<{ spec: ApiSpec }>(`/projects/${projectId}/apispec/import`, {
+      method: 'POST',
+      body: JSON.stringify({ method: 'url', url, autoSync }),
+    }),
+
+  importRaw: (projectId: string, raw: string) =>
+    apiFetch<{ spec: ApiSpec }>(`/projects/${projectId}/apispec/import`, {
+      method: 'POST',
+      body: JSON.stringify({ method: 'raw', raw }),
+    }),
+
+  /** Re-fetch from the original URL source. */
+  sync: (projectId: string) =>
+    apiFetch<{ spec: ApiSpec }>(`/projects/${projectId}/apispec/sync`, {
+      method: 'POST',
+    }),
+
+  /** Delete the imported spec. */
+  delete: (projectId: string) =>
+    apiFetch<null>(`/projects/${projectId}/apispec`, { method: 'DELETE' }),
+
+  /** Update the custom note on an endpoint. */
+  updateNote: (projectId: string, endpointId: string, note: string) =>
+    apiFetch<{ spec: ApiSpec }>(`/projects/${projectId}/apispec/endpoint`, {
+      method: 'PATCH',
+      body: JSON.stringify({ endpointId, note }),
+    }),
+
+  /** Proxy a Try-It request through the server. */
+  tryRequest: (
+    projectId: string,
+    opts: {
+      method: string
+      baseUrl: string
+      path: string
+      headers?: Record<string, string>
+      queryParams?: Record<string, string>
+      body?: string
+    },
+  ) =>
+    apiFetch<TryItResult>(`/projects/${projectId}/apispec/try`, {
+      method: 'POST',
+      body: JSON.stringify(opts),
+    }),
+}
