@@ -342,8 +342,8 @@ function AccountInfoCard() {
 // ── Main page ────────────────────────────────────────────────────────────────
 export function ProfilePage() {
     return (
-        <div className="flex items-center justify-center py-7">
-            <div className="max-w-2xl space-y-6">
+        <div className="flex justify-center py-7 px-4">
+            <div className="w-full max-w-2xl space-y-6">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight">Profile</h1>
                     <p className="text-muted-foreground mt-1">Manage your personal information and password.</p>

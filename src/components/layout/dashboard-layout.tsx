@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react"
 import { Link, Outlet, useLocation, useNavigate, useSearchParams } from "react-router-dom"
-import { BookOpen, Github, Search, FolderKanban, User, Settings, LogOut, BookDown, Command, TerminalIcon } from "lucide-react"
+import { BookOpen, Github, Search, FolderKanban, User, Settings, LogOut, BookDown, TerminalIcon, Menu, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useAuthStore } from "@/store/auth"
 import { authApi } from "@/lib/api"
@@ -34,7 +34,12 @@ export function DashboardLayout() {
   const { theme } = useTheme()
 
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [location.pathname])
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -76,8 +81,19 @@ export function DashboardLayout() {
     <div className="min-h-screen bg-muted/30">
       {/* Top Navbar */}
       <header className="sticky top-0 z-40 w-full border-b border-border bg-background">
-        <div className="flex h-14 items-center justify-between container mx-auto max-w-7xl p-6">
+        <div className="flex h-14 items-center justify-between container mx-auto max-w-7xl px-4 sm:px-6">
+
+          {/* Left: logo + github (desktop) */}
           <div className="flex items-center gap-4">
+            {/* Mobile hamburger */}
+            <button
+              className="md:hidden flex items-center justify-center h-8 w-8 rounded-md text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setMobileMenuOpen((o) => !o)}
+              aria-label="Toggle menu"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+
             <Link to="/projects" className="flex items-center gap-2 font-semibold text-primary">
               <img
                 src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
@@ -85,19 +101,22 @@ export function DashboardLayout() {
                 className="h-7 w-auto"
               />
             </Link>
-            <div className="h-4 w-px bg-border" />
+
+            <div className="h-4 w-px bg-border hidden md:block" />
             <a
               href="https://github.com/Docsnine"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              className="hidden md:flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               <Github className="h-4 w-4" />
               <span>Star on GitHub</span>
             </a>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="relative w-64 hidden md:block">
+
+          {/* Right: search (desktop) + avatar */}
+          <div className="flex items-center gap-3">
+            <div className="relative w-56 hidden md:block">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
                 type="search"
@@ -120,22 +139,15 @@ export function DashboardLayout() {
 
               {dropdownOpen && (
                 <div className="absolute right-0 mt-2 w-52 rounded-lg border border-border bg-background shadow-lg z-50 py-1">
-                  {/* Name + email */}
                   <div className="px-4 py-3 border-b border-border">
                     <p className="text-sm font-medium truncate">{user?.name}</p>
                     <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
                   </div>
-
-                  {/* Theme toggle row */}
-                  <div className="flex items-center justify-between px-4 text-sm text-muted-foreground text-sm">
+                  <div className="flex items-center justify-between px-4 text-sm text-muted-foreground">
                     <span>Theme</span>
                     <ThemeToggle />
                   </div>
-
-                  {/* Divider */}
                   <div className="border-t border-border my-1" />
-
-                  {/* Logout */}
                   <button
                     onClick={() => { setDropdownOpen(false); handleLogout() }}
                     className="flex w-full items-center gap-2 px-4 py-2 text-sm text-destructive hover:bg-destructive/10 transition-colors"
@@ -149,8 +161,8 @@ export function DashboardLayout() {
           </div>
         </div>
 
-        {/* Sub-nav */}
-        <div className="flex h-12 items-center justify-between border-t border-border/90 bg-background/50 backdrop-blur-sm container mx-auto max-w-7xl p-6">
+        {/* Desktop sub-nav */}
+        <div className="hidden md:flex h-12 items-center justify-between border-t border-border/90 bg-background/50 backdrop-blur-sm container mx-auto max-w-7xl px-6">
           <nav className="flex items-center gap-6">
             {navLinks.map((link) => {
               const Icon = link.icon
@@ -194,9 +206,84 @@ export function DashboardLayout() {
             })}
           </nav>
         </div>
+
+        {/* Mobile slide-down menu */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-border bg-background px-4 pb-4">
+            {/* Mobile search */}
+            <div className="relative mt-3 mb-4">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search projects..."
+                className="w-full bg-muted/50 pl-9 border-border"
+                value={searchValue}
+                onChange={handleSearchChange}
+              />
+            </div>
+
+            {/* Primary nav */}
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Navigation</p>
+            <nav className="flex flex-col gap-1 mb-4">
+              {navLinks.map((link) => {
+                const Icon = link.icon
+                const isActive = location.pathname.startsWith(link.href)
+                return (
+                  <Link
+                    key={link.name}
+                    to={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {link.name}
+                  </Link>
+                )
+              })}
+            </nav>
+
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Account</p>
+            <nav className="flex flex-col gap-1">
+              {rightSideLinks.map((link) => {
+                const Icon = link.icon
+                const isActive = location.pathname.startsWith(link.href)
+                return (
+                  <Link
+                    key={link.name}
+                    to={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="h-4 w-4" />
+                    {link.name}
+                  </Link>
+                )
+              })}
+              <a
+                href="https://github.com/Docsnine"
+                target="_blank"
+                rel="noreferrer"
+                className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              >
+                <Github className="h-4 w-4" />
+                Star on GitHub
+              </a>
+            </nav>
+          </div>
+        )}
       </header>
 
-      <main className="container mx-auto max-w-7xl p-6">
+      <main className="container mx-auto max-w-7xl px-4 sm:px-6 py-4 sm:py-6">
         <Outlet />
       </main>
 

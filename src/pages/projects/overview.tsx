@@ -295,9 +295,9 @@ export function ProjectOverviewPage() {
                 </div>
             </div>
 
-            <div className="grid gap-x-9 md:grid-cols-3">
+            <div className="grid gap-6 md:gap-x-9 md:grid-cols-3">
                 {/* Main content */}
-                <Card className="md:col-span-2 shadow-none">
+                <Card className="md:col-span-2 order-2 md:order-1 shadow-none">
                     <CardHeader>
                         <CardTitle>Project Overview</CardTitle>
                         <CardDescription>Summary of the latest analysis run.</CardDescription>
@@ -402,7 +402,7 @@ export function ProjectOverviewPage() {
                 </Card>
 
                 {/* Actions sidebar */}
-                <Card className="shadow-none">
+                <Card className="order-1 md:order-2 shadow-none">
                     <CardHeader>
                         <CardTitle>Actions</CardTitle>
                         <CardDescription>Manage exports and project settings.</CardDescription>

@@ -18,7 +18,7 @@ export function Dialog({ open, onOpenChange, children }: { open: boolean, onOpen
 
 export function DialogContent({ className, children, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <div className={cn("z-50 grid w-full max-w-lg gap-4 border border-border bg-background p-6 shadow-lg duration-200 rounded-2xl", className)} {...props}>
+    <div className={cn("z-50 grid w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto gap-4 border border-border bg-background p-6 shadow-lg duration-200 rounded-2xl", className)} {...props}>
       {children}
     </div>
   )

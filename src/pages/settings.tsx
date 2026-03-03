@@ -710,8 +710,8 @@ export function SettingsPage() {
     }, [googleDocsStatus, setSearchParams])
 
     return (
-        <div className="flex items-center justify-center py-7">
-            <div className="max-w-2xl space-y-6">
+        <div className="flex justify-center py-7 px-4">
+            <div className="w-full max-w-2xl space-y-6">
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
                         <Settings className="h-7 w-7" />

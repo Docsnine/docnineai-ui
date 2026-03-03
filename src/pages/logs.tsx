@@ -111,7 +111,7 @@ function ProjectEventLog({ projectId }: { projectId: string }) {
         return (
           <div key={i} className={cn("flex items-start gap-2.5 px-4 py-2 text-xs font-mono", SEV_ROW[sev])}>
             <span className="mt-0.5">{SEV_ICON[sev]}</span>
-            <span className="flex-1 text-foreground/80 leading-5">{eventMessage(ev)}</span>
+            <span className="flex-1 min-w-0 text-foreground/80 leading-5 break-words">{eventMessage(ev)}</span>
             {ts && (
               <span className="text-muted-foreground/60 shrink-0 whitespace-nowrap">
                 {format(ts, "HH:mm:ss")}

@@ -362,7 +362,7 @@ export function DocumentationsPage() {
                             {inProgressProjects.map((p) => {
                                 const uiStatus = mapApiStatus(p.status)
                                 return (
-                                    <div key={p._id} className="flex items-center justify-between bg-card border border-border rounded-lg px-4 py-3 gap-4">
+                                    <div key={p._id} className="flex flex-wrap items-center justify-between bg-card border border-border rounded-lg px-4 py-3 gap-x-4 gap-y-2">
                                         <div className="flex items-center gap-3 min-w-0">
                                             <Github className="h-4 w-4 text-muted-foreground shrink-0" />
                                             <span className="font-medium text-sm truncate">
