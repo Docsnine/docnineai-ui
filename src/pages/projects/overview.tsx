@@ -219,7 +219,7 @@ export function ProjectOverviewPage() {
 
     return (
         <>
-        <div className="space-y-6">
+        <div className="space-y-4 mt-4">
             <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
                 <Link to="/dashboard" className="hover:text-foreground flex items-center gap-1 transition-colors">
                     <ArrowLeft className="h-4 w-4" /> Dashboard
@@ -295,7 +295,7 @@ export function ProjectOverviewPage() {
                 </div>
             </div>
 
-            <div className="grid gap-6 md:gap-x-9 md:grid-cols-3">
+            <div className="grid gap-4 md:gap-x-4 md:grid-cols-3">
                 {/* Main content */}
                 <Card className="md:col-span-2 order-2 md:order-1 shadow-none">
                     <CardHeader>
