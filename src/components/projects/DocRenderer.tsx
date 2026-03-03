@@ -184,7 +184,7 @@ const components: Components = {
 
         return (
             <h1 id={slug}
-                className="group mt-2 mb-6 pb-4 text-[1.85rem] font-bold tracking-tight
+                className="group mt-2 mb-4 pb-4 text-[1.85rem] font-bold tracking-tight
                    text-foreground border-b-2 border-border scroll-mt-24
                    flex items-baseline gap-3"
             >
@@ -201,8 +201,8 @@ const components: Components = {
         const slug = slugify(children)
         return (
             <h2 id={slug}
-                className="group mt-10 mb-4 text-[1.25rem] font-semibold tracking-tight
-                   text-foreground scroll-mt-24 flex items-center gap-3"
+                className="group mt-8 mb-2 text-[1.25rem] font-semibold tracking-tight
+                   text-foreground scroll-mt-20 flex items-center gap-3"
             >
                 <span className="w-[3px] h-5 rounded-full bg-primary shrink-0" aria-hidden />
                 <span className="flex-1">{children}</span>
@@ -217,7 +217,7 @@ const components: Components = {
         const slug = slugify(children)
         return (
             <h3 id={slug}
-                className="mt-7 mb-3 text-[1rem] font-semibold text-foreground scroll-mt-24"
+                className="mt-6 mb-2 text-[1rem] font-semibold text-foreground scroll-mt-24"
             >
                 {children}
             </h3>
@@ -245,7 +245,7 @@ const components: Components = {
         if (allBadges) {
             return <div className="flex flex-wrap items-center gap-2 my-5">{children}</div>
         }
-        return <p className="my-4 leading-[1.8] text-foreground/80 text-[0.9375rem]">{children}</p>
+        return <p className="my-2 leading-[1.8] text-foreground/80 text-[0.9375rem]">{children}</p>
     },
 
     // ── Links ──────────────────────────────────────────────────────────────────
@@ -273,7 +273,7 @@ const components: Components = {
         if (isBadgeUrl(src)) {
             return (
                 <img src={src} alt={alt ?? ""}
-                    className="inline-block h-5 align-middle rounded-sm" loading="lazy" />
+                    className="inline-block h-5 align-middle rounded-2xl" loading="lazy" />
             )
         }
         return (
@@ -304,7 +304,7 @@ const components: Components = {
 
         // fallback (rare)
         return (
-            <pre className="my-5 overflow-x-auto rounded-lg bg-[#0d1117] border border-white/10 p-5">
+            <pre className="my-3 overflow-x-auto rounded-lg bg-[#0d1117] border border-white/10 p-5">
                 {children}
             </pre>
         )
@@ -378,7 +378,7 @@ const components: Components = {
 
     ul({ children }) {
         return (
-            <ul className="my-4 space-y-2 pl-0 list-none" data-list-type="ul">
+            <ul className="my-4 space-y-1 pl-0 list-none" data-list-type="ul">
                 {children}
             </ul>
         )
@@ -387,7 +387,7 @@ const components: Components = {
     ol({ children }) {
         return (
             <ol
-                className="my-4 space-y-2 pl-0 list-none"
+                className="my-4 space-y-1 pl-0 list-none"
                 data-list-type="ol"
                 style={{ counterReset: "doc-list" }}
             >
@@ -451,7 +451,7 @@ const components: Components = {
 
     hr() {
         return (
-            <div className="my-8 flex items-center gap-3">
+            <div className="my-5 flex items-center gap-3">
                 <div className="flex-1 h-px bg-border" />
                 <div className="flex gap-1">
                     <span className="h-1 w-1 rounded-full bg-border" />

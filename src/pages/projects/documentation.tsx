@@ -750,7 +750,7 @@ export function DocumentationViewerPage() {
                           setStatusModal({ open: true, pendingStatus: s })
                         }}
                         className={cn(
-                          "flex items-center gap-2.5 px-3 py-2 text-xs transition-colors hover:bg-muted text-left",
+                          "flex items-center gap-2.5 px-3 py-2 text-sm transition-colors hover:bg-muted text-left",
                           s === currentStatus && "bg-muted font-medium",
                         )}
                       >

@@ -369,7 +369,7 @@ export function DocumentationsPage() {
                                 <button
                                     key={status}
                                     onClick={() => setStatusFilter(isActive ? "all" : status)}
-                                    className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full border transition-colors ${isActive
+                                    className={`inline-flex items-center gap-1.5 text-sm px-2.5 py-1 rounded-full border transition-colors ${isActive
                                             ? "bg-primary text-primary-foreground border-primary"
                                             : "border-border text-muted-foreground hover:border-muted-foreground"
                                         }`}
