@@ -80,6 +80,7 @@ function AppRoutes() {
       <Route path="/verify" element={<VerifyPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      
       {/* OAuth social login callback */}
       <Route path="/auth/callback" element={<AuthCallbackPage />} />
       <Route path="/terms" element={<TermsPage />} />

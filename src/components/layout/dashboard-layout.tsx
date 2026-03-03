@@ -51,7 +51,7 @@ export function DashboardLayout() {
             </Link>
             <div className="h-4 w-px bg-border" />
             <a
-              href="https://github.com"
+              href="https://github.com/Docsnine"
               target="_blank"
               rel="noreferrer"
               className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"

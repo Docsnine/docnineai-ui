@@ -247,24 +247,28 @@ export function NewProjectModal({ open, onOpenChange, openToGithubStep }: NewPro
         if (githubConnected) { setStep("github"); return }
         setIsConnecting(true)
         setApiError(null)
+
+        // CRITICAL: open the popup window IMMEDIATELY — before any await.
+        // Browsers only allow window.open() within a synchronous user-gesture
+        // handler. Once we hit an await (even for a fast API call), the browser
+        // considers the gesture "consumed" and blocks the popup. On Vercel the
+        // round-trip to the server takes tens of milliseconds, which is enough
+        // for the popup to be silently blocked, causing the fallback full-page
+        // navigation and "no connection" on return.
+        const width = 620, height = 720
+        const left = Math.round(window.screenX + (window.outerWidth - width) / 2)
+        const top  = Math.round(window.screenY + (window.outerHeight - height) / 2)
+        const popup = window.open(
+            "",             // blank page for now — navigated below once we have the URL
+            "github-oauth",
+            `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`,
+        )
+
         try {
             const data = await githubApi.getOAuthStartUrl()
 
             // Clear any stale result from a previous OAuth attempt.
             localStorage.removeItem("__docnine_github_oauth_result")
-
-            // Open a popup. The popup writes its result to localStorage
-            // (github-oauth-complete.tsx) which we poll below.
-            // This survives COOP-severed window.opener AND Chrome 88+
-            // clearing window.name on cross-origin navigation.
-            const width = 620, height = 720
-            const left = Math.round(window.screenX + (window.outerWidth - width) / 2)
-            const top  = Math.round(window.screenY + (window.outerHeight - height) / 2)
-            const popup = window.open(
-                data.url,
-                "github-oauth",
-                `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`,
-            )
 
             if (!popup || popup.closed) {
                 // Popup was blocked — fall back to full-page navigation.
@@ -273,6 +277,9 @@ export function NewProjectModal({ open, onOpenChange, openToGithubStep }: NewPro
                 window.location.href = data.url
                 return
             }
+
+            // Navigate the already-open popup to the real GitHub OAuth URL.
+            popup.location.href = data.url
 
             let settled = false
 
@@ -326,6 +333,8 @@ export function NewProjectModal({ open, onOpenChange, openToGithubStep }: NewPro
             }, 300)
 
         } catch (err: any) {
+            // Close the blank popup we opened before the await if the API call failed.
+            if (popup && !popup.closed) popup.close()
             setApiError(err instanceof ApiException ? err.message : "Failed to start GitHub OAuth.")
             setIsConnecting(false)
         }

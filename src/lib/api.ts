@@ -238,6 +238,21 @@ export const authApi = {
 
   disconnectGoogleDocs: () =>
     apiFetch<void>('/auth/google-docs', { method: 'DELETE' }),
+
+  /** Notion export — settings-level (per-user API key storage) */
+  getNotionStatus: () =>
+    apiFetch<{ connected: boolean; parentPageId?: string; workspaceName?: string | null; connectedAt?: string }>(
+      '/auth/notion/status',
+    ),
+
+  connectNotion: (body: { apiKey: string; parentPageId: string; workspaceName?: string }) =>
+    apiFetch<{ connected: boolean; parentPageId: string; workspaceName?: string | null; connectedAt: string }>(
+      '/auth/notion/connect',
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+
+  disconnectNotion: () =>
+    apiFetch<void>('/auth/notion', { method: 'DELETE' }),
 }
 
 // ── GitHub ────────────────────────────────────────────────────────────────

@@ -4,6 +4,8 @@ import { githubApi, authApi, GitHubStatus, API_BASE } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
     Github,
@@ -19,6 +21,9 @@ import {
     Settings,
     RefreshCw,
     FileText,
+    KeyRound,
+    Eye,
+    EyeOff,
 } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
@@ -468,6 +473,231 @@ function GoogleDocsCard({ initialStatus }: { initialStatus?: "connected" | "erro
     )
 }
 
+// ── Notion Integration card ──────────────────────────────────────────────────
+type NotionStatusData = {
+    connected: boolean
+    parentPageId?: string
+    workspaceName?: string | null
+    connectedAt?: string
+}
+
+function NotionCard() {
+    const [status, setStatus] = useState<NotionStatusData | null>(null)
+    const [isLoading, setIsLoading] = useState(true)
+    const [actionLoading, setActionLoading] = useState<"connect" | "disconnect" | null>(null)
+    const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null)
+
+    // Form state
+    const [apiKey, setApiKey] = useState("")
+    const [parentPageId, setParentPageId] = useState("")
+    const [workspaceName, setWorkspaceName] = useState("")
+    const [showKey, setShowKey] = useState(false)
+
+    const loadStatus = useCallback(async () => {
+        setIsLoading(true)
+        try {
+            const data = await authApi.getNotionStatus()
+            setStatus(data)
+        } catch {
+            setStatus(null)
+        } finally {
+            setIsLoading(false)
+        }
+    }, [])
+
+    useEffect(() => { loadStatus() }, [loadStatus])
+
+    const handleConnect = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!apiKey.trim() || !parentPageId.trim()) {
+            setFeedback({ type: "error", message: "API key and page ID are required." })
+            return
+        }
+        setActionLoading("connect")
+        setFeedback(null)
+        try {
+            const data = await authApi.connectNotion({
+                apiKey: apiKey.trim(),
+                parentPageId: parentPageId.trim(),
+                workspaceName: workspaceName.trim() || undefined,
+            })
+            setStatus(data)
+            setApiKey("")
+            setParentPageId("")
+            setWorkspaceName("")
+            setFeedback({ type: "success", message: "Notion connected successfully." })
+        } catch (err: any) {
+            setFeedback({ type: "error", message: err?.message ?? "Failed to connect Notion." })
+        } finally {
+            setActionLoading(null)
+        }
+    }
+
+    const handleDisconnect = async () => {
+        if (!confirm("Disconnect Notion? You will no longer be able to push docs to your Notion workspace.")) return
+        setActionLoading("disconnect")
+        setFeedback(null)
+        try {
+            await authApi.disconnectNotion()
+            setStatus({ connected: false })
+            setFeedback({ type: "success", message: "Notion disconnected." })
+        } catch (err: any) {
+            setFeedback({ type: "error", message: err?.message ?? "Failed to disconnect Notion." })
+        } finally {
+            setActionLoading(null)
+        }
+    }
+
+    return (
+        <Card className="shadow-none">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                    {/* Notion-style icon */}
+                    <svg viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none">
+                        <rect width="24" height="24" rx="4" fill="#191919" />
+                        <path d="M6 6.5C6 6.22 6.22 6 6.5 6H14l3.5 3.5V17.5c0 .28-.22.5-.5.5h-10c-.28 0-.5-.22-.5-.5V6.5z" fill="white" fillOpacity=".15" stroke="white" strokeWidth="1.2" />
+                        <path d="M14 6v3.5H17.5" stroke="white" strokeWidth="1.2" strokeLinejoin="round" />
+                        <path d="M9 11h6M9 14h4" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
+                    </svg>
+                    Notion Export
+                </CardTitle>
+                <CardDescription>
+                    Connect your Notion workspace to push documentation directly to a Notion page.
+                </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                {feedback && (
+                    <div
+                        className={`flex items-center gap-2 rounded-lg border px-4 py-3 text-sm ${feedback.type === "success"
+                            ? "border-green-500/30 bg-green-500/10 text-green-700 dark:text-green-400"
+                            : "border-destructive/30 bg-destructive/10 text-destructive"
+                            }`}
+                    >
+                        {feedback.type === "success"
+                            ? <CheckCircle2 className="h-4 w-4 shrink-0" />
+                            : <AlertTriangle className="h-4 w-4 shrink-0" />
+                        }
+                        {feedback.message}
+                    </div>
+                )}
+
+                {isLoading ? (
+                    <div className="space-y-2">
+                        <Skeleton className="h-5 w-5 rounded-full" />
+                        <Skeleton className="h-4 w-48" />
+                    </div>
+                ) : status?.connected ? (
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-3 rounded-lg border border-green-500/20 bg-green-500/5 px-4 py-3">
+                            <CheckCircle2 className="h-5 w-5 text-green-500 shrink-0" />
+                            <div className="min-w-0 flex-1">
+                                <p className="font-medium text-sm">
+                                    {status.workspaceName
+                                        ? <span>Connected to <span className="text-primary">{status.workspaceName}</span></span>
+                                        : "Notion connected"
+                                    }
+                                </p>
+                                <p className="text-xs text-muted-foreground mt-0.5 font-mono truncate">
+                                    Page ID: {status.parentPageId}
+                                </p>
+                                {status.connectedAt && (
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                        Since {format(new Date(status.connectedAt), "d MMM yyyy")}
+                                    </p>
+                                )}
+                            </div>
+                            <Badge variant="success" className="ml-auto shrink-0">Active</Badge>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Button variant="outline" size="sm" onClick={loadStatus} className="gap-2">
+                                <RefreshCw className="h-3.5 w-3.5" />
+                                Refresh
+                            </Button>
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={handleDisconnect}
+                                disabled={actionLoading === "disconnect"}
+                                className="gap-2"
+                            >
+                                {actionLoading === "disconnect"
+                                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    : <Unlink className="h-3.5 w-3.5" />
+                                }
+                                Disconnect
+                            </Button>
+                        </div>
+                    </div>
+                ) : (
+                    <form onSubmit={handleConnect} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="notion-api-key">Integration Token</Label>
+                            <div className="relative">
+                                <Input
+                                    id="notion-api-key"
+                                    type={showKey ? "text" : "password"}
+                                    placeholder="secret_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                                    value={apiKey}
+                                    onChange={(e) => setApiKey(e.target.value)}
+                                    className="pr-10 font-mono text-sm"
+                                    required
+                                    autoComplete="off"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowKey((v) => !v)}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                                    tabIndex={-1}
+                                >
+                                    {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="notion-page-id">Parent Page ID</Label>
+                            <Input
+                                id="notion-page-id"
+                                type="text"
+                                placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                                value={parentPageId}
+                                onChange={(e) => setParentPageId(e.target.value)}
+                                className="font-mono text-sm"
+                                required
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                The 32-character ID from your Notion page URL. Exported docs will be created as sub-pages here.
+                            </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="notion-workspace-name">
+                                Workspace / Page name <span className="text-muted-foreground font-normal">(optional)</span>
+                            </Label>
+                            <Input
+                                id="notion-workspace-name"
+                                type="text"
+                                placeholder="My Docs"
+                                value={workspaceName}
+                                onChange={(e) => setWorkspaceName(e.target.value)}
+                                className="text-sm"
+                            />
+                        </div>
+
+                        <Button type="submit" disabled={actionLoading === "connect"} className="gap-2">
+                            {actionLoading === "connect"
+                                ? <Loader2 className="h-4 w-4 animate-spin" />
+                                : <KeyRound className="h-4 w-4" />
+                            }
+                            Connect Notion
+                        </Button>
+                    </form>
+                )}
+            </CardContent>
+        </Card>
+    )
+}
+
 // ── Main page ────────────────────────────────────────────────────────────────
 export function SettingsPage() {
     const [searchParams, setSearchParams] = useSearchParams()
@@ -494,6 +724,7 @@ export function SettingsPage() {
 
                 <GitHubCard />
                 <GoogleDocsCard initialStatus={googleDocsStatus ?? undefined} />
+                <NotionCard />
                 <WebhookCard />
             </div>
         </div>

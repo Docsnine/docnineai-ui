@@ -38,7 +38,7 @@ function CTA() {
                             variant="outline"
                             className="bg-secondary border-border text-foreground hover:bg-muted rounded-full px-8 h-14 text-lg font-semibold w-full sm:w-auto"
                         >
-                            <a href="https://github.com" target="_blank" rel="noreferrer">
+                            <a href="https://github.com/Docsnine" target="_blank" rel="noreferrer">
                                 <Github className="mr-2 h-5 w-5" /> Star on GitHub
                             </a>
                         </Button>
