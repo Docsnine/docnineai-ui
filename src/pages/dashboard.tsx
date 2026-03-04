@@ -19,7 +19,6 @@ import {
     Clock,
     AlertCircle,
     CheckCircle2,
-    Loader2,
     MoreVertical,
     Archive,
     Trash2,
@@ -29,6 +28,7 @@ import {
     Pencil,
 } from "lucide-react"
 import TopBar from "@/components/projects/top-bar"
+import Loader1 from "@/components/ui/loader1"
 
 // Debounces value changes by `delay` ms to avoid hammering the API on every keystroke
 function useDebounce<T>(value: T, delay: number): T {
@@ -151,7 +151,7 @@ export function DashboardPage() {
             case "analyzing":
                 return (
                     <Badge variant="warning" className="flex items-center gap-1">
-                        <Loader2 className="h-3 w-3 animate-spin" /> Analyzing
+                        <Loader1 className="h-3 w-3 " /> Analyzing
                     </Badge>
                 )
             case "failed":
@@ -367,7 +367,7 @@ export function DashboardPage() {
                                                     disabled={actionLoading === project.id}
                                                 >
                                                     {actionLoading === project.id ? (
-                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                        <Loader1 className="h-4 w-4 " />
                                                     ) : (
                                                         <MoreVertical className="h-4 w-4" />
                                                     )}

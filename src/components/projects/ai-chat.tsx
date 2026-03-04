@@ -2,12 +2,13 @@ import { useState, useRef, useEffect, useCallback } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Bot, Send, User, Loader2, X, Trash2, Sparkles, Square } from "lucide-react"
+import { Bot, Send, User, X, Trash2, Sparkles, Square } from "lucide-react"
 import ReactMarkdown, { type Components } from "react-markdown"
 import remarkGfm from "remark-gfm"
 import { cn } from "@/lib/utils"
 import { chatStream, chatApi, type ApiProject } from "@/lib/api"
 import { CodeBlock } from "@/components/projects/DocRenderer"
+import Loader1 from "../ui/loader1"
 
 // ── Suggested prompts from real project data ──────────────────────────────────
 function buildSuggestedPrompts(project: ApiProject): string[] {
@@ -320,7 +321,7 @@ export function AIChatPanel({
                     </ReactMarkdown>
                   </div>
                 ) : (
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                  <Loader1 className="h-4 w-4 text-muted-foreground" />
                 )}
               </div>
             </div>

@@ -2,8 +2,9 @@ import { useEffect, useState } from "react"
 import { useParams, useNavigate, Link } from "react-router-dom"
 import { sharingApi } from "@/lib/api"
 import { useAuthStore } from "@/store/auth"
-import { Loader2, CheckCircle2, AlertTriangle } from "lucide-react"
+import { CheckCircle2, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import Loader1 from "@/components/ui/loader1"
 
 export function AcceptInvitePage() {
   const { token } = useParams<{ token: string }>()
@@ -45,7 +46,7 @@ export function AcceptInvitePage() {
       <div className="w-full max-w-sm text-center space-y-4">
         {state === "loading" && (
           <>
-            <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
+            <Loader1 className="h-10 w-10  text-primary mx-auto" />
             <p className="text-muted-foreground">Accepting invitation…</p>
           </>
         )}

@@ -341,7 +341,7 @@ export function VersionHistoryPanel({
                               onClick={() => handlePreview(v)}
                             >
                               {isLoadingPreview ? (
-                                <span className="h-3 w-3 rounded-full border-2 border-muted-foreground border-t-transparent animate-spin" />
+                                <span className="h-3 w-3 rounded-full border-2 border-muted-foreground border-t-transparent " />
                               ) : (
                                 <Eye className="h-3 w-3" />
                               )}
@@ -375,7 +375,7 @@ export function VersionHistoryPanel({
                                 onClick={() => handleRestore(v._id)}
                               >
                                 {isRestoring && (
-                                  <span className="mr-1 h-3 w-3 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                                  <span className="mr-1 h-3 w-3 rounded-full border-2 border-white border-t-transparent " />
                                 )}
                                 Restore
                               </Button>

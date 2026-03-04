@@ -6,7 +6,6 @@ import {
     Users,
     Star,
     ArrowRight,
-    Loader2,
     ChevronRight,
     Minus,
     User,
@@ -22,6 +21,7 @@ import TopHeader from "@/components/header"
 import Footer from "@/components/footer"
 import { Switch } from "@/components/ui/switch"
 import PlanCard from "@/components/billing/PlanCard"
+import Loader1 from "@/components/ui/loader1"
 
 
 // ── Accent per plan ───────────────────────────────────────────────────────────
@@ -228,7 +228,7 @@ export function PricingPage() {
 
                 {fetching ? (
                     <div className="flex justify-center py-24">
-                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                        <Loader1 className="h-8 w-8  text-muted-foreground" />
                     </div>
                 ) : (
                     <>

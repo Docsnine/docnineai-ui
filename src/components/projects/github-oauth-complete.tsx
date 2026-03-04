@@ -1,6 +1,6 @@
 import { useEffect } from "react"
 import { useSearchParams } from "react-router-dom"
-import { Loader2 } from "lucide-react"
+import Loader1 from "../ui/loader1"
 
 /**
  * Landing page for the GitHub repo-connect OAuth popup.
@@ -77,7 +77,7 @@ export function GithubOAuthCompletePage() {
     return (
         <div className="flex min-h-screen items-center justify-center bg-background">
             <div className="flex flex-col items-center gap-4 text-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <Loader1 className="h-8 w-8 text-primary" />
                 <p className="text-sm text-muted-foreground">Completing GitHub connection…</p>
             </div>
         </div>

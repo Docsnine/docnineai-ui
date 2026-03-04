@@ -8,9 +8,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { authApi, ApiException, API_BASE } from "@/lib/api"
-import { Loader2 } from "lucide-react"
 import BackgroundGrid from "@/components/ui/background-grid"
 import TopHeader from "@/components/header"
+import Loader1 from "@/components/ui/loader1"
 
 const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(80, "Name must be at most 80 characters"),
@@ -131,7 +131,7 @@ export function SignupPage() {
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isLoading && <Loader1 className="mr-2 h-4 w-4 " />}
                 Create Account
               </Button>
               <div className="text-center text-sm text-muted-foreground">

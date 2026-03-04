@@ -1,12 +1,13 @@
 import { useState } from "react"
 import {
-  Play, Loader2, ChevronDown, ChevronRight, X, Plus,
+  Play, ChevronDown, ChevronRight, X, Plus,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
 import { cn } from "@/lib/utils"
 import { apiSpecApi, type ApiSpec, type ApiSpecEndpoint, type TryItResult } from "@/lib/api"
+import Loader1 from "../ui/loader1"
 
 // ── HTTP method colours ────────────────────────────────────────────────────
 
@@ -281,7 +282,7 @@ export function TryItConsole({ projectId, endpoint, spec, onClose }: Props) {
                     <div className="flex items-center gap-2 border-b border-border px-4 py-2.5 shrink-0">
                         <Button size="sm" onClick={handleSend} disabled={sending} className="gap-1.5">
                             {sending
-                                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                ? <Loader1 className="h-3.5 w-3.5 " />
                                 : <Play className="h-3.5 w-3.5" />}
                             {sending ? "Sending…" : "Send"}
                         </Button>

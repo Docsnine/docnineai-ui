@@ -152,7 +152,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
     try {
       const data = await projectsApi.list(params);
       set({
-        projects: data.projects.map(fromApiProject),
+        projects: data.projects.map((p) => fromApiProject(p)),
         total: data.total,
         page: data.page,
         totalPages: data.totalPages,

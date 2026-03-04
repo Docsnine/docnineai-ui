@@ -35,7 +35,7 @@ export function LandingPage() {
         </h1>
 
         {/* Subheadline */}
-        <p className="max-w-3xl text-xl md:text-2xl text-muted-foreground font-medium leading-relaxed mb-12">
+        <p className="max-w-3xl text-xl md:text-xl text-muted-foreground font-medium leading-relaxed mb-12">
           Let AI generate complete, readable documentation, then chat with your codebase like a teammate who knows every line.
         </p>
 

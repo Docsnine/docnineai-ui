@@ -13,12 +13,12 @@ import {
     Lock,
     CheckCircle2,
     AlertTriangle,
-    Loader2,
     Save,
     Eye,
     EyeOff,
     ShieldCheck,
 } from "lucide-react"
+import Loader1 from "@/components/ui/loader1"
 
 // ── Inline feedback banner ───────────────────────────────────────────────────
 function Feedback({ type, message }: { type: "success" | "error"; message: string }) {
@@ -148,7 +148,7 @@ function ProfileInfoCard() {
                     </div>
 
                     <Button type="submit" disabled={!isDirty || isLoading} className="gap-2">
-                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                        {isLoading ? <Loader1 className="h-4 w-4 " /> : <Save className="h-4 w-4" />}
                         Save changes
                     </Button>
                 </form>
@@ -286,7 +286,7 @@ function ChangePasswordCard() {
                     </div>
 
                     <Button type="submit" disabled={!canSubmit || isLoading} variant="destructive" className="gap-2">
-                        {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
+                        {isLoading ? <Loader1 className="h-4 w-4 " /> : <ShieldCheck className="h-4 w-4" />}
                         Change password
                     </Button>
                 </form>

@@ -1,7 +1,8 @@
 import { BillingPlan } from "@/lib/api"
-import { ArrowRight, Badge, Check, Loader2, Star, User, Users, Zap } from "lucide-react"
+import { ArrowRight, Badge, Check, Star, User, Users, Zap } from "lucide-react"
 import { Button } from "../ui/button"
 import { cn } from "@/lib/utils"
+import Loader1 from "../ui/loader1"
 
 const PLAN_ICONS: Record<string, React.ElementType> = {
     free: Star,
@@ -113,7 +114,7 @@ function PlanCard({
                 onClick={() => onSelect(plan)}
             >
                 {isLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader1 className="mr-2 h-4 w-4" />
                 ) : isCurrent ? (
                     "Current plan"
                 ) : plan.id === "free" ? (

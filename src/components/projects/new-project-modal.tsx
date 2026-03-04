@@ -17,7 +17,6 @@ import { Label } from "@/components/ui/label"
 import {
     Github,
     Link as LinkIcon,
-    Loader2,
     Search,
     CheckCircle2,
     AlertCircle,
@@ -27,6 +26,7 @@ import { useProjectStore } from "@/store/projects"
 import { githubApi, GitHubOrg, GitHubRepo, ApiException } from "@/lib/api"
 import { OrgAccountPicker } from "@/components/projects/org-account-picker"
 import { cn } from "@/lib/utils"
+import Loader1 from "../ui/loader1"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Organisation selection persistence
@@ -77,7 +77,7 @@ function RepoList({ repos, loading, hasNextPage, selectedRepo, onSelect, onLoadM
     if (loading && repos.length === 0) {
         return (
             <div className="flex items-center justify-center p-8 text-sm text-muted-foreground">
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading repositories…
+                <Loader1 className="mr-2 h-4 w-4" /> Loading repositories…
             </div>
         )
     }
@@ -118,7 +118,7 @@ function RepoList({ repos, loading, hasNextPage, selectedRepo, onSelect, onLoadM
             )}
             {loading && repos.length > 0 && (
                 <div className="flex items-center justify-center p-3 text-sm text-muted-foreground">
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading…
+                    <Loader1 className="mr-2 h-4 w-4" /> Loading…
                 </div>
             )}
         </div>
@@ -462,7 +462,7 @@ export function NewProjectModal({ open, onOpenChange, openToGithubStep }: NewPro
                             className="flex items-center gap-4 rounded-lg border border-border p-4 text-left transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                                {(isConnecting || githubStatusLoading) ? <Loader2 className="h-5 w-5 animate-spin" /> : <Github className="h-5 w-5" />}
+                                {(isConnecting || githubStatusLoading) ? <Loader1 className="h-5 w-5" /> : <Github className="h-5 w-5" />}
                             </div>
                             <div>
                                 <div className="flex items-center gap-2">
@@ -510,7 +510,7 @@ export function NewProjectModal({ open, onOpenChange, openToGithubStep }: NewPro
                         <DialogFooter className="mt-4">
                             <Button type="button" variant="ghost" onClick={() => setStep("source")}>Back</Button>
                             <Button type="submit" disabled={form.formState.isSubmitting}>
-                                {form.formState.isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {form.formState.isSubmitting && <Loader1 className="mr-2 h-4 w-4" />}
                                 Create Project
                             </Button>
                         </DialogFooter>
@@ -554,7 +554,7 @@ export function NewProjectModal({ open, onOpenChange, openToGithubStep }: NewPro
                         <DialogFooter className="mt-4">
                             <Button type="button" variant="ghost" onClick={() => setStep("source")}>Back</Button>
                             <Button onClick={onSubmitGithub} disabled={!selectedRepo || isConnecting}>
-                                {isConnecting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                {isConnecting && <Loader1 className="mr-2 h-4 w-4" />}
                                 Import Repository
                             </Button>
                         </DialogFooter>

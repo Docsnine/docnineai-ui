@@ -5,6 +5,8 @@ import { ThemeToggle } from './theme-toggle'
 import { Mail, MessageSquare, Menu, X, Sparkles } from 'lucide-react'
 import { useTheme } from './theme-provider'
 import ApplicationLogo from './logo'
+import Loader from './ui/loader'
+import Loader1 from './ui/loader1'
 
 function TopHeader({ className }: { className?: string }) {
     const { theme } = useTheme()

@@ -90,7 +90,7 @@ export function DashboardLayout() {
   return (
     <div className="min-h-screen bg-muted/30">
       {/* Top Navbar */}
-      <header className="sticky top-0 z-40 w-full border-b border-border bg-background">
+      <header className="sticky top-0 z-50 w-full border-b border-border bg-background">
         <div className="flex h-14 items-center justify-between container mx-auto max-w-7xl px-4 sm:px-6">
 
           {/* Left: logo + github (desktop) */}

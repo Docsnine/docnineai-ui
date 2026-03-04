@@ -8,7 +8,6 @@ import {
   TrendingUp,
   Search,
   Trash2,
-  Loader2,
   AlertCircle,
   ChevronLeft,
   ChevronRight,
@@ -23,6 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import Loader1 from "@/components/ui/loader1"
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -136,7 +136,7 @@ function DeleteButton({ onConfirm, loading }: { onConfirm: () => void; loading?:
           onClick={() => { setConfirm(false); onConfirm() }}
           disabled={loading}
         >
-          {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : "Yes"}
+          {loading ? <Loader1 className="h-3 w-3 " /> : "Yes"}
         </Button>
         <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => setConfirm(false)}>
           No
@@ -153,7 +153,7 @@ function DeleteButton({ onConfirm, loading }: { onConfirm: () => void; loading?:
       onClick={() => setConfirm(true)}
       disabled={loading}
     >
-      {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+      {loading ? <Loader1 className="h-3.5 w-3.5 " /> : <Trash2 className="h-3.5 w-3.5" />}
     </Button>
   )
 }
@@ -338,11 +338,10 @@ export function SuperAdminPage() {
           <button
             key={id}
             onClick={() => setActiveTab(id)}
-            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === id
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${activeTab === id
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
+              }`}
           >
             <Icon className="h-4 w-4" />
             {label}

@@ -15,10 +15,11 @@
  */
 import { useEffect, useState } from "react"
 import { useSearchParams, useNavigate, Link } from "react-router-dom"
-import { Loader2, XCircle } from "lucide-react"
+import { XCircle } from "lucide-react"
 import { useAuthStore } from "@/store/auth"
 import { authApi, setAccessToken } from "@/lib/api"
 import BackgroundGrid from "@/components/ui/background-grid"
+import Loader1 from "@/components/ui/loader1"
 
 const ERROR_MESSAGES: Record<string, string> = {
   access_denied: "You cancelled the sign-in. No changes were made.",
@@ -83,7 +84,7 @@ export function AuthCallbackPage() {
           </>
         ) : (
           <>
-            <Loader2 className="h-10 w-10 animate-spin text-primary mx-auto" />
+            <Loader1 className="h-10 w-10  text-primary mx-auto" />
             <p className="text-sm text-muted-foreground">Signing you in…</p>
           </>
         )}

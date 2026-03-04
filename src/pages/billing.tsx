@@ -10,7 +10,6 @@ import {
     ChevronLeft,
     ChevronRight,
     Download,
-    Loader2,
     PauseCircle,
     XCircle,
     Users,
@@ -50,6 +49,7 @@ import {
 import { useSubscriptionStore, PLAN_LEVEL } from "@/store/subscription"
 import { PlanBadge } from "@/components/billing/PlanBadge"
 import { cn } from "@/lib/utils"
+import Loader1 from "@/components/ui/loader1"
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 function fmtMoney(cents: number, currency = "USD") {
@@ -299,7 +299,7 @@ function ChangePlanModal({
                 )}
                 {resultMsg?.type === "redirect" && (
                     <div className="flex items-center gap-2 rounded-lg border border-blue-500/20 bg-blue-500/10 px-3 py-2.5 text-sm text-blue-400">
-                        <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0" />
+                        <Loader1 className="h-3.5 w-3.5  shrink-0" />
                         <span>{resultMsg.text}</span>
                         <a
                             href={resultMsg.link}
@@ -317,7 +317,7 @@ function ChangePlanModal({
                         disabled={!selected || loading || !!resultMsg}
                         onClick={handleConfirm}
                     >
-                        {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                        {loading ? <Loader1 className="mr-2 h-4 w-4 " /> : null}
                         {confirmLabel}
                     </Button>
                 </div>
@@ -405,7 +405,7 @@ function CurrentPlanCard({
                                 disabled={refreshing}
                                 title="Sync plan"
                             >
-                                <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
+                                <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "")} />
                             </Button>
                         </div>
                     </div>
@@ -593,7 +593,7 @@ function CurrentPlanCard({
                                 onClick={handleCancel}
                             >
                                 {loading === "cancel" ? (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    <Loader1 className="mr-2 h-4 w-4 " />
                                 ) : null}
                                 Confirm cancel
                             </Button>
@@ -654,7 +654,7 @@ function CurrentPlanCard({
                                 onClick={handlePause}
                             >
                                 {loading === "pause" ? (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    <Loader1 className="mr-2 h-4 w-4 " />
                                 ) : null}
                                 Pause {pauseMonths}mo
                             </Button>
@@ -744,7 +744,7 @@ function SeatsCard({
                         <Plus className="h-3.5 w-3.5" />
                     </Button>
                     <Button size="sm" onClick={handleAdd} disabled={loading || redirecting}>
-                        {loading && <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />}
+                        {loading && <Loader1 className="mr-2 h-3.5 w-3.5 " />}
                         {redirecting ? "Redirecting…" : `Add ${qty} seat${qty !== 1 ? "s" : ""}`}
                     </Button>
                     {success && (
@@ -753,7 +753,7 @@ function SeatsCard({
                 </div>
                 {redirecting && (
                     <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1.5">
-                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <Loader1 className="h-3 w-3 " />
                         Taking you to payment — seats will be added once payment is confirmed.
                     </p>
                 )}
@@ -822,7 +822,7 @@ function PaymentMethodsCard({ onRefresh }: { onRefresh: () => void }) {
                         Payment Methods
                     </CardTitle>
                     <Button variant="outline" size="sm" onClick={loadMethods} disabled={loading}>
-                        <RefreshCw className={cn("h-3.5 w-3.5", loading && "animate-spin")} />
+                        <RefreshCw className={cn("h-3.5 w-3.5", loading && "")} />
                     </Button>
                 </div>
             </CardHeader>
@@ -911,7 +911,7 @@ function PaymentMethodsCard({ onRefresh }: { onRefresh: () => void }) {
                                         onClick={() => handleDelete(pm._id)}
                                     >
                                         {actionId === pm._id ? (
-                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                            <Loader1 className="h-3.5 w-3.5 " />
                                         ) : (
                                             <Trash2 className="h-3.5 w-3.5" />
                                         )}
@@ -1010,7 +1010,7 @@ function InvoiceDetailsModal({
                             disabled={loading}
                             onClick={handleSave}
                         >
-                            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            {loading ? <Loader1 className="mr-2 h-4 w-4 " /> : null}
                             Save
                         </Button>
                     </div>
@@ -1124,7 +1124,7 @@ function BillingHistoryCard() {
                                                             }}
                                                         >
                                                             {downloadingId === inv._id
-                                                                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                                ? <Loader1 className="h-3.5 w-3.5 " />
                                                                 : <Download className="h-3.5 w-3.5" />}
                                                         </Button>
                                                     )}
@@ -1201,7 +1201,7 @@ export function BillingPage() {
     if (initialising) {
         return (
             <div className="flex min-h-[40vh] items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <Loader1 className="h-8 w-8  text-muted-foreground" />
             </div>
         )
     }
@@ -1326,7 +1326,7 @@ export function BillingTab() {
     if (initialising) {
         return (
             <div className="flex min-h-[30vh] items-center justify-center">
-                <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />
+                <Loader1 className="h-7 w-7  text-muted-foreground" />
             </div>
         )
     }
@@ -1337,7 +1337,7 @@ export function BillingTab() {
             {/* Payment verification banner */}
             {verifyState?.status === "verifying" && (
                 <div className="flex items-center gap-3 rounded-lg border border-blue-500/20 bg-blue-500/10 px-4 py-3 text-sm text-blue-400">
-                    <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                    <Loader1 className="h-4 w-4  shrink-0" />
                     Verifying your payment with Flutterwave…
                 </div>
             )}

@@ -2,10 +2,11 @@ import { useEffect, useState } from "react"
 import { Link, useSearchParams, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { BookOpen, MailCheck, CheckCircle2, XCircle, Loader2 } from "lucide-react"
+import { BookOpen, MailCheck, CheckCircle2, XCircle } from "lucide-react"
 import { authApi, ApiException } from "@/lib/api"
 import TopHeader from "@/components/header"
 import BackgroundGrid from "@/components/ui/background-grid"
+import Loader1 from "@/components/ui/loader1"
 
 /**
  * VerifyPage handles two cases:
@@ -49,7 +50,7 @@ export function VerifyPage() {
       <div className="flex min-h-screen flex-col items-center justify-center bg-muted/30 p-4">
         <Card className="w-full max-w-md text-center">
           <CardContent className="flex flex-col items-center justify-center py-12 space-y-4">
-            <Loader2 className="h-10 w-10 text-primary animate-spin" />
+            <Loader1 className="h-10 w-10 text-primary " />
             <p className="text-muted-foreground">Verifying your email…</p>
           </CardContent>
         </Card>

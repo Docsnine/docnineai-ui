@@ -11,7 +11,6 @@ import {
     Github,
     CheckCircle2,
     AlertTriangle,
-    Loader2,
     Link as LinkIcon,
     Copy,
     Check,
@@ -30,6 +29,7 @@ import {
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 import { BillingTab } from "@/pages/billing"
+import Loader1 from "@/components/ui/loader1"
 
 // ── Copy button ──────────────────────────────────────────────────────────────
 function CopyButton({ text, className }: { text: string; className?: string }) {
@@ -182,7 +182,7 @@ function GitHubCard() {
                                 className="gap-2"
                             >
                                 {actionLoading === "disconnect"
-                                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    ? <Loader1 className="h-3.5 w-3.5 " />
                                     : <Unlink className="h-3.5 w-3.5" />
                                 }
                                 Disconnect
@@ -201,7 +201,7 @@ function GitHubCard() {
                             className="gap-2"
                         >
                             {actionLoading === "connect"
-                                ? <Loader2 className="h-4 w-4 animate-spin" />
+                                ? <Loader1 className="h-4 w-4 " />
                                 : <Github className="h-4 w-4" />
                             }
                             Connect GitHub
@@ -440,7 +440,7 @@ function GoogleDocsCard({ initialStatus }: { initialStatus?: "connected" | "erro
                                 className="gap-2"
                             >
                                 {actionLoading === "disconnect"
-                                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    ? <Loader1 className="h-3.5 w-3.5 " />
                                     : <Unlink className="h-3.5 w-3.5" />
                                 }
                                 Disconnect
@@ -455,7 +455,7 @@ function GoogleDocsCard({ initialStatus }: { initialStatus?: "connected" | "erro
                         </div>
                         <Button onClick={handleConnect} disabled={actionLoading === "connect"} className="gap-2">
                             {actionLoading === "connect"
-                                ? <Loader2 className="h-4 w-4 animate-spin" />
+                                ? <Loader1 className="h-4 w-4 " />
                                 : (
                                     <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0">
                                         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -622,7 +622,7 @@ function NotionCard() {
                                 className="gap-2"
                             >
                                 {actionLoading === "disconnect"
-                                    ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    ? <Loader1 className="h-3.5 w-3.5 " />
                                     : <Unlink className="h-3.5 w-3.5" />
                                 }
                                 Disconnect
@@ -687,7 +687,7 @@ function NotionCard() {
 
                         <Button type="submit" disabled={actionLoading === "connect"} className="gap-2">
                             {actionLoading === "connect"
-                                ? <Loader2 className="h-4 w-4 animate-spin" />
+                                ? <Loader1 className="h-4 w-4 " />
                                 : <KeyRound className="h-4 w-4" />
                             }
                             Connect Notion

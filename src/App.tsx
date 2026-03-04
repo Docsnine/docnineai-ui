@@ -19,7 +19,6 @@ import { SettingsPage } from "@/pages/settings"
 import { PricingPage } from "@/pages/pricing"
 import { useAuthStore } from "@/store/auth"
 import { ThemeProvider } from "@/components/theme-provider"
-import { Loader2 } from "lucide-react"
 import { TermsPage } from "@/pages/guest/terms"
 import { PrivacyPage } from "@/pages/guest/privacy"
 import { ContactPage } from "@/pages/guest/contact"
@@ -29,6 +28,9 @@ import { GithubOAuthCompletePage } from "@/components/projects/github-oauth-comp
 import { PublicPortalPage } from "@/pages/docs/public-portal"
 import { PlatformDocsPage } from "@/pages/docs"
 import { SuperAdminPage } from "@/pages/admin/super-admin"
+import ApplicationLogo from "./components/logo"
+import Loader from "./components/ui/loader"
+import Loader1 from "./components/ui/loader1"
 
 /**
  * Forwards the /billing route plus any Flutterwave callback params
@@ -120,8 +122,9 @@ function AppRoutes() {
   // before the refresh token check completes.
   if (!initialized) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex min-h-screen items-center justify-center gap-3 bg-background">
+        <ApplicationLogo className="h-18" />
+        <Loader1 size="md" className="text-muted-foreground" />
       </div>
     )
   }

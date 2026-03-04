@@ -15,7 +15,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from "react"
 import { useParams, Link } from "react-router-dom"
 import {
-    Search, ChevronRight, Lock, Globe, Eye, EyeOff, Loader2,
+    Search, ChevronRight, Lock, Globe, Eye, EyeOff,
     Menu, X, ExternalLink, AlertTriangle, BookOpen, ArrowUp, Home
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -29,6 +29,7 @@ import {
     PORTAL_SECTION_KEYS,
 } from "@/lib/api"
 import { cn } from "@/lib/utils"
+import Loader1 from "@/components/ui/loader1"
 
 // ── Types ─────────────────────────────────────────────────────────────────
 
@@ -145,7 +146,7 @@ function PasswordGate({
                     </div>
                     {error && <p className="text-xs text-destructive">{error}</p>}
                     <Button type="submit" className="w-full" disabled={loading}>
-                        {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        {loading && <Loader1 className="h-4 w-4 mr-2 " />}
                         Unlock
                     </Button>
                 </form>
@@ -290,7 +291,7 @@ export function PublicPortalPage() {
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-background">
-                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                <Loader1 className="h-8 w-8  text-muted-foreground" />
             </div>
         )
     }

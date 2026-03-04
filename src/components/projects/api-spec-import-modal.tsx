@@ -1,11 +1,12 @@
 import { useState, useRef, useCallback } from "react"
-import { Upload, Link2, FileText, X, RefreshCw, Check, AlertCircle, Loader2 } from "lucide-react"
+import { Upload, Link2, FileText, X, RefreshCw, Check, AlertCircle } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { cn } from "@/lib/utils"
 import { apiSpecApi, type ApiSpec } from "@/lib/api"
+import Loader1 from "../ui/loader1"
 
 interface Props {
     projectId: string
@@ -258,7 +259,7 @@ export function ApiSpecImportModal({ projectId, open, onClose, onImported, exist
                         Cancel
                     </Button>
                     <Button size="sm" onClick={handleImport} disabled={loading}>
-                        {loading ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="mr-1.5 h-3.5 w-3.5" />}
+                        {loading ? <Loader1 className="mr-1.5 h-3.5 w-3.5" /> : <RefreshCw className="mr-1.5 h-3.5 w-3.5" />}
                         {loading ? "Importing…" : existingSpec ? "Re-import" : "Import"}
                     </Button>
                 </DialogFooter>

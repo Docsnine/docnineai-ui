@@ -12,12 +12,12 @@ import {
   AlertCircle,
   CheckCircle2,
   Info,
-  Loader2,
   RefreshCw,
   Terminal,
 } from "lucide-react"
 import { fetchEventSource } from "@microsoft/fetch-event-source"
 import { cn } from "@/lib/utils"
+import Loader1 from "@/components/ui/loader1"
 
 type LogSeverity = "info" | "warning" | "error" | "success"
 
@@ -215,7 +215,7 @@ export function LiveAnalysisPage() {
         <div className="flex items-center gap-3">
           {connectionState === "reconnecting" && (
             <Badge variant="warning" className="animate-pulse">
-              <RefreshCw className="mr-1 h-3 w-3 animate-spin" /> Reconnecting…
+              <RefreshCw className="mr-1 h-3 w-3" /> Reconnecting…
             </Badge>
           )}
           {connectionState === "disconnected" && pipelineStatus === "done" && (
@@ -266,7 +266,7 @@ export function LiveAnalysisPage() {
         <CardContent className="flex-1 overflow-y-auto p-4 font-mono text-sm">
           {logs.length === 0 ? (
             <div className="flex items-center justify-center h-full text-muted-foreground">
-              <Loader2 className="h-5 w-5 animate-spin mr-2" /> Waiting for pipeline events…
+              <Loader1 className="h-5 w-5 mr-2" /> Waiting for pipeline events…
             </div>
           ) : (
             <div className="space-y-1">

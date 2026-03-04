@@ -17,7 +17,6 @@ import {
     Trash2,
     Eye,
     Download,
-    Loader2,
     Plus,
     FilePlus2,
     FileSpreadsheet,
@@ -35,6 +34,7 @@ import { cn } from "@/lib/utils"
 import { attachmentsApi, ApiAttachment, getAccessToken, API_BASE } from "@/lib/api"
 import { useSubscriptionStore, meetsMinPlan } from "@/store/subscription"
 import { UpgradeModal } from "@/components/billing/UpgradeModal"
+import Loader1 from "../ui/loader1"
 
 // ── File type helpers ──────────────────────────────────────────────────────
 
@@ -301,7 +301,7 @@ function AttachmentRow({
                                         disabled={deleting}
                                         className="text-[11px] px-2 py-1 rounded bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors disabled:opacity-60"
                                     >
-                                        {deleting ? <Loader2 className="h-3 w-3 animate-spin" /> : "Delete?"}
+                                        {deleting ? <Loader1 className="h-3 w-3" /> : "Delete?"}
                                     </button>
                                     <button
                                         onClick={() => setConfirmDelete(false)}
@@ -345,7 +345,7 @@ function AttachmentRow({
                                 onClick={handleSaveDesc}
                                 className="h-7 w-7 flex items-center justify-center rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-60"
                             >
-                                {savingDesc ? <Loader2 className="h-3 w-3 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                                {savingDesc ? <Loader1 className="h-3 w-3" /> : <Check className="h-3.5 w-3.5" />}
                             </button>
                             <button
                                 onClick={() => { setEditingDesc(false); setDesc(attachment.description ?? "") }}
@@ -583,7 +583,7 @@ export function OtherDocsPanel({ projectId }: OtherDocsPanelProps) {
                                         : "border-border bg-muted/30 text-muted-foreground",
                             )}
                         >
-                            {u.progress === "pending" && <Loader2 className="h-4 w-4 animate-spin shrink-0" />}
+                            {u.progress === "pending" && <Loader1 className="h-4 w-4 shrink-0" />}
                             {u.progress === "done" && <Check className="h-4 w-4 shrink-0" />}
                             {u.progress === "error" && <AlertCircle className="h-4 w-4 shrink-0" />}
                             <span className="truncate">{u.file.name}</span>

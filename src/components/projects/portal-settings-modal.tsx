@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react"
 import {
     Globe, Lock, Eye, EyeOff, Copy, Check, ExternalLink,
-    Settings, Loader2, ChevronDown, Palette, FileText, Link as LinkIcon,
+    Settings, ChevronDown, Palette, FileText, Link as LinkIcon,
     AlertTriangle, Globe2, Shield
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -21,6 +21,7 @@ import {
     PORTAL_SECTION_LABELS,
 } from "@/lib/api"
 import { cn } from "@/lib/utils"
+import Loader1 from "../ui/loader1"
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -227,7 +228,7 @@ export function PortalSettingsModal({
                             className="min-w-[110px]"
                         >
                             {publishing ? (
-                                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                                <Loader1 className="h-3.5 w-3.5 mr-1.5 " />
                             ) : portal?.isPublished ? (
                                 <EyeOff className="h-3.5 w-3.5 mr-1.5" />
                             ) : (
@@ -256,7 +257,7 @@ export function PortalSettingsModal({
                 {/* Loading / error */}
                 {loading && (
                     <div className="flex items-center justify-center py-16">
-                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        <Loader1 className="h-6 w-6  text-muted-foreground" />
                     </div>
                 )}
 
@@ -563,7 +564,7 @@ export function PortalSettingsModal({
                         <div className="flex gap-2">
                             <Button variant="outline" size="sm" onClick={onClose}>Close</Button>
                             <Button size="sm" onClick={handleSave} disabled={saving}>
-                                {saving ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : null}
+                                {saving ? <Loader1 className="h-3.5 w-3.5 mr-1.5 " /> : null}
                                 Save Settings
                             </Button>
                         </div>

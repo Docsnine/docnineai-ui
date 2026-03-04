@@ -9,7 +9,6 @@ import { Skeleton } from "@/components/ui/skeleton"
 import {
   CheckCircle2,
   AlertCircle,
-  Loader2,
   Clock,
   Archive,
   ChevronDown,
@@ -24,6 +23,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import TopBar from "@/components/projects/top-bar"
+import Loader1 from "@/components/ui/loader1"
 
 // ── Event severity helpers ───────────────────────────────────────────────────
 type Severity = "info" | "success" | "warning" | "error"
@@ -131,7 +131,7 @@ function ProjectActivityRow({ project }: { project: ApiProject }) {
 
   const statusConfig = {
     completed: { icon: <CheckCircle2 className="h-4 w-4 text-green-500" />, badge: "success" as const, label: "Completed" },
-    analyzing: { icon: <Loader2 className="h-4 w-4 text-yellow-500 animate-spin" />, badge: "warning" as const, label: "Analyzing" },
+    analyzing: { icon: <Loader1 className="h-4 w-4 text-yellow-500 " />, badge: "warning" as const, label: "Analyzing" },
     failed: { icon: <AlertCircle className="h-4 w-4 text-red-500" />, badge: "destructive" as const, label: "Failed" },
     archived: { icon: <Archive className="h-4 w-4 text-muted-foreground" />, badge: "secondary" as const, label: "Archived" },
   }

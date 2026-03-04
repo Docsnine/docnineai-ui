@@ -25,7 +25,6 @@ import {
   ListOrdered,
   Code,
   Link as LinkIcon,
-  Loader2,
   Info,
   FileCode,
   Eye,
@@ -53,6 +52,7 @@ import { ApiSpecImportModal } from "@/components/projects/api-spec-import-modal"
 import { ApiReferenceViewer } from "@/components/projects/api-reference-viewer"
 import { useSubscriptionStore, meetsMinPlan } from "@/store/subscription"
 import { UpgradeModal } from "@/components/billing/UpgradeModal"
+import Loader1 from "@/components/ui/loader1"
 
 // ── Status-change modal ───────────────────────────────────────────────────────
 interface StatusChangeModalProps {
@@ -108,7 +108,7 @@ function StatusChangeModal({ isOpen, onClose, pendingStatus, onConfirm, members,
               <label className="text-sm font-medium">Assign to <span className="text-muted-foreground font-normal">(optional)</span></label>
               {loadingMembers ? (
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Loader2 className="h-3 w-3 animate-spin" /> Loading members...
+                  <Loader1 className="h-3 w-3" /> Loading members...
                 </div>
               ) : activeMembers.length === 0 ? (
                 <p className="text-xs text-muted-foreground">No invited members yet.</p>
@@ -229,7 +229,7 @@ function StaleSectionBanner({
           <Eye className="mr-1.5 h-3 w-3" /> View AI version
         </Button>
         <Button size="sm" className="h-7 text-xs" disabled={accepting} onClick={onAcceptAI}>
-          {accepting && <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />}
+          {accepting && <Loader1 className="mr-1.5 h-3 w-3 " />}
           Accept AI version
         </Button>
         <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={onDismiss}>
@@ -265,7 +265,7 @@ function StaleDiffModal({
         </div>
         <div className="flex items-center gap-2">
           <Button size="sm" disabled={accepting} onClick={onAcceptAI}>
-            {accepting && <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />}
+            {accepting && <Loader1 className="mr-1.5 h-3 w-3 " />}
             Accept AI version
           </Button>
           <Button size="sm" variant="outline" onClick={onClose}>
@@ -709,7 +709,7 @@ export function DocumentationViewerPage() {
   return (
     <div>
       {/* Top bar */}
-      <div className="relative z-50 md:flex items-center justify-between border-b border-border/90 bg-background/50 backdrop-blur-sm container mx-auto max-w-7xl pb-6">
+      <div className="relative z-20 md:flex items-center justify-between border-b border-border/90 bg-background/50 backdrop-blur-sm container mx-auto max-w-7xl pb-6">
         <div className="flex items-center">
           <div>
             <h1 className="text-2xl font-bold tracking-tight">Documentation</h1>
@@ -734,7 +734,7 @@ export function DocumentationViewerPage() {
                 </Button>
                 <Button size="sm" onClick={handleSave} disabled={actionLoading === "save"}>
                   {actionLoading === "save"
-                    ? <Loader2 className="h-4 w-4 animate-spin" />
+                    ? <Loader1 className="h-4 w-4 " />
                     : <Save className="h-4 w-4" />}
                   <span className="hidden sm:inline ml-1.5">Save</span>
                 </Button>
@@ -841,7 +841,7 @@ export function DocumentationViewerPage() {
               onClick={() => setMoreDropdownOpen((o) => !o)}
             >
               {actionLoading
-                ? <Loader2 className="h-4 w-4 animate-spin" />
+                ? <Loader1 className="h-4 w-4 " />
                 : <MoreHorizontal className="h-4 w-4" />}
             </Button>
 
@@ -1070,7 +1070,7 @@ export function DocumentationViewerPage() {
                       </div>
                     ) : (
                       <div className="flex items-center justify-center h-full text-muted-foreground">
-                        <Loader2 className="h-5 w-5 animate-spin mr-2" /> Waiting for content…
+                        <Loader1 className="h-5 w-5  mr-2" /> Waiting for content…
                       </div>
                     )
                   )}

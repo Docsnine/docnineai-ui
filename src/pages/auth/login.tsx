@@ -9,9 +9,9 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuthStore } from "@/store/auth"
 import { authApi, ApiException, API_BASE } from "@/lib/api"
-import { Loader2 } from "lucide-react"
 import BackgroundGrid from "@/components/ui/background-grid"
 import TopHeader from "@/components/header"
+import Loader1 from "@/components/ui/loader1"
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -140,7 +140,7 @@ export function LoginPage() {
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isLoading && <Loader1 className="mr-2 h-4 w-4 " />}
                 Sign In
               </Button>
               <div className="text-center text-sm text-muted-foreground">

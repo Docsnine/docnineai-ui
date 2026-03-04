@@ -19,7 +19,6 @@ import {
     Github,
     AlertTriangle,
     CheckCircle2,
-    Loader2,
     Clock,
     PlayCircle,
     RefreshCw,
@@ -29,6 +28,7 @@ import {
     FileCode,
     Lock,
 } from "lucide-react"
+import Loader1 from "@/components/ui/loader1"
 
 export function ProjectOverviewPage() {
     const { id } = useParams<{ id: string }>()
@@ -123,7 +123,7 @@ export function ProjectOverviewPage() {
             case "analyzing":
                 return (
                     <Badge variant="warning" className="flex items-center gap-1">
-                        <Loader2 className="h-4 w-4 animate-spin" /> Analyzing Codebase…
+                        <Loader1 className="h-4 w-4" /> Analyzing Codebase…
                     </Badge>
                 )
             case "failed":
@@ -235,300 +235,300 @@ export function ProjectOverviewPage() {
 
     return (
         <>
-        <div className="space-y-4 mt-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
-                <Link to="/dashboard" className="hover:text-foreground flex items-center gap-1 transition-colors">
-                    <ArrowLeft className="h-4 w-4" /> Dashboard
-                </Link>
-                <span>/</span>
-                <span className="text-foreground font-medium">{project.name}</span>
-            </div>
-
-            {/* Header card */}
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-card p-6 rounded-xl border border-border">
-                <div className="space-y-2">
-                    <div className="flex items-center gap-3 flex-wrap">
-                        <h1 className="text-3xl font-bold tracking-tight">{project.name}</h1>
-                        {getStatusBadge()}
-                    </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
-                        <a
-                            href={project.repoUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="flex items-center gap-1 hover:text-primary transition-colors"
-                        >
-                            <Github className="h-4 w-4" />
-                            {project.repoOwner}/{project.name}
-                        </a>
-                        <span className="flex items-center gap-1 text-[11px]">
-                            <Clock className="h-4 w-4" />
-                            Updated {formatDistanceToNow(new Date(project.updatedAt), { addSuffix: true })}
-                        </span>
-                    </div>
+            <div className="space-y-4 mt-4">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-4">
+                    <Link to="/dashboard" className="hover:text-foreground flex items-center gap-1 transition-colors">
+                        <ArrowLeft className="h-4 w-4" /> Dashboard
+                    </Link>
+                    <span>/</span>
+                    <span className="text-foreground font-medium">{project.name}</span>
                 </div>
-                <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
-                    {/* Share button — owner only */}
-                    {isOwner && (
-                        <Button
-                            variant="outline"
-                            className="w-full md:w-auto"
-                            onClick={() => requirePlan("Share & Collaborate", "starter", "Share your project with team members and collaborators.", () => setShowShare(true))}
-                        >
-                            <Share2 className="mr-2 h-4 w-4" />
-                            {!meetsMinPlan(subscription, "starter") && <Lock className="h-3.5 w-3.5 mr-1 opacity-50" />}
-                            Share
-                        </Button>
-                    )}
-                    {/* Shared badge for non-owners */}
-                    {!isOwner && (
-                        <Badge variant="secondary" className="capitalize">
-                            {project?.shareRole} access
-                        </Badge>
-                    )}
-                    {(project.status === "failed") && isOwner && (
-                        <Button onClick={handleRetry} disabled={!!actionLoading} className="w-full md:w-auto">
-                            {actionLoading === "retry" ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <RefreshCw className="mr-2 h-4 w-4" />
-                            )}
-                            Retry Analysis
-                        </Button>
-                    )}
-                    {project.status === "analyzing" && (
-                        <Button asChild variant="secondary" className="w-full md:w-auto">
-                            <Link to={`/projects/${project.id}/live`}>
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" /> View Progress
-                            </Link>
-                        </Button>
-                    )}
-                    {project.status === "completed" && (
-                        <Button asChild className="w-full md:w-auto">
-                            <Link to={`/projects/${project.id}/docs`}>
-                                <BookOpen className="mr-2 h-4 w-4" /> View Documentation
-                            </Link>
-                        </Button>
-                    )}
-                </div>
-            </div>
 
-            <div className="grid gap-4 md:gap-x-4 md:grid-cols-3">
-                {/* Main content */}
-                <Card className="md:col-span-2 order-2 md:order-1 shadow-none">
-                    <CardHeader>
-                        <CardTitle>Project Overview</CardTitle>
-                        <CardDescription>Summary of the latest analysis run.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        {project.status === "completed" ? (
-                            <div className="space-y-4">
-                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-border">
-                                    {project.readme && (
-                                        <div className="space-y-1">
-                                            <p className="text-sm font-medium flex items-center gap-1 text-green-600">
-                                                <CheckCircle2 className="h-4 w-4" /> README
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">Generated</p>
-                                        </div>
-                                    )}
-                                    {project.apiReference && (
-                                        <div className="space-y-1">
-                                            <p className="text-sm font-medium flex items-center gap-1 text-green-600">
-                                                <CheckCircle2 className="h-4 w-4" /> API Reference
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">Generated</p>
-                                        </div>
-                                    )}
-                                    {project.schemaDocs && (
-                                        <div className="space-y-1">
-                                            <p className="text-sm font-medium flex items-center gap-1 text-green-600">
-                                                <CheckCircle2 className="h-4 w-4" /> Schema Docs
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">Generated</p>
-                                        </div>
-                                    )}
-                                    {project.internalDocs && (
-                                        <div className="space-y-1">
-                                            <p className="text-sm font-medium flex items-center gap-1 text-green-600">
-                                                <CheckCircle2 className="h-4 w-4" /> Internal Docs
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">Generated</p>
-                                        </div>
-                                    )}
-                                    {project.securityReport && (
-                                        <div className="space-y-1">
-                                            <p className="text-sm font-medium flex items-center gap-1 text-yellow-600">
-                                                <AlertTriangle className="h-4 w-4" /> Security Report
-                                            </p>
-                                            <p className="text-xs text-muted-foreground">Generated</p>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* GitHub README */}
-                                <div className="pt-4 border-t border-border">
-                                    <p className="text-sm font-semibold flex items-center gap-1.5 mb-3 text-muted-foreground">
-                                        <Github className="h-4 w-4" /> GitHub README
-                                    </p>
-                                    {isReadmeLoading ? (
-                                        <div className="space-y-2">
-                                            <Skeleton className="h-4 w-3/4" />
-                                            <Skeleton className="h-4 w-full" />
-                                            <Skeleton className="h-4 w-5/6" />
-                                            <Skeleton className="h-4 w-2/3" />
-                                        </div>
-                                    ) : githubReadme ? (
-                                        <div className="prose prose-sm prose-slate dark:prose-invert max-w-none max-h-[480px] overflow-y-auto pr-1">
-                                            <DocRenderer content={githubReadme} />
-                                        </div>
-                                    ) : (
-                                        <p className="text-sm text-muted-foreground italic">No README found in this repository.</p>
-                                    )}
-                                </div>
-                            </div>
-                        ) : project.status === "analyzing" ? (
-                            <div className="space-y-4">
-                                <div className="flex items-center gap-3 text-muted-foreground">
-                                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                                    <p>Analysis is currently running. This may take a few minutes.</p>
-                                </div>
-                                <div className="space-y-2 pt-4">
-                                    <Skeleton className="h-4 w-[250px]" />
-                                    <Skeleton className="h-4 w-[200px]" />
-                                    <Skeleton className="h-4 w-[300px]" />
-                                </div>
-                            </div>
-                        ) : project.status === "failed" ? (
-                            <div className="flex flex-col items-center justify-center py-12 text-center border border-dashed border-destructive/30 rounded-lg bg-destructive/5">
-                                <AlertTriangle className="h-10 w-10 text-destructive mb-3" />
-                                <h3 className="font-medium text-destructive">Analysis Failed</h3>
-                                <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                                    The pipeline encountered an error. Click "Retry Analysis" to run it again.
-                                </p>
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center py-12 text-center border border-dashed border-border rounded-lg bg-muted/30">
-                                <PlayCircle className="h-10 w-10 text-muted-foreground mb-3" />
-                                <h3 className="font-medium">No Analysis Data</h3>
-                                <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                                    Archived project — no new analyses will run.
-                                </p>
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-                {/* Actions sidebar */}
-                <Card className="order-1 md:order-2 shadow-none">
-                    <CardHeader>
-                        <CardTitle>Actions</CardTitle>
-                        <CardDescription>Manage exports and project settings.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                        {exportMessage && (
-                            <div className={`rounded-md p-2 text-xs ${exportMessage.startsWith("✅") ? "bg-green-50 text-green-800 border border-green-200" : "bg-destructive/10 text-destructive"}`}>
-                                {exportMessage}
-                            </div>
-                        )}
-                        <Button
-                            variant="outline"
-                            className="w-full justify-start"
-                            disabled={project.status !== "completed" || !!actionLoading}
-                            onClick={() => requirePlan("PDF Export", "starter", "Export your documentation as a PDF file.", handleExportPdf)}
-                        >
-                            {actionLoading === "pdf" ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <Download className="mr-2 h-4 w-4" />
-                            )}
-                            Export to PDF
-                            {!meetsMinPlan(subscription, "starter") && <Lock className="h-3.5 w-3.5 ml-auto opacity-40" />}
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="w-full justify-start"
-                            disabled={project.status !== "completed" || !!actionLoading}
-                            onClick={() => requirePlan("GitHub Actions Export", "team", "Export your documentation as a GitHub Actions YAML workflow.", handleExportYaml)}
-                        >
-                            {actionLoading === "yaml" ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <FileCode className="mr-2 h-4 w-4" />
-                            )}
-                            Export GitHub Actions YAML
-                            {!meetsMinPlan(subscription, "team") && <Lock className="h-3.5 w-3.5 ml-auto opacity-40" />}
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="w-full justify-start"
-                            disabled={project.status !== "completed" || !!actionLoading}
-                            onClick={() => requirePlan("Notion Export", "team", "Push your documentation directly to Notion.", handleExportNotion)}
-                        >
-                            {actionLoading === "notion" ? (
-                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            ) : (
-                                <ExternalLink className="mr-2 h-4 w-4" />
-                            )}
-                            Push to Notion
-                            {!meetsMinPlan(subscription, "team") && <Lock className="h-3.5 w-3.5 ml-auto opacity-40" />}
-                        </Button>
-                        <div className="border-t border-border pt-2 space-y-1">
-                            {isOwner && project.status !== "archived" && project.status !== "analyzing" && (
-                                <Button
-                                    variant="ghost"
-                                    className="w-full justify-start text-muted-foreground hover:text-foreground"
-                                    disabled={!!actionLoading}
-                                    onClick={() => requirePlan("Archive Project", "starter", "Archive projects to keep your workspace organised.", handleArchive)}
-                                >
-                                    {actionLoading === "archive" ? (
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <Archive className="mr-2 h-4 w-4" />
-                                    )}
-                                    Archive Project
-                                    {!meetsMinPlan(subscription, "starter") && <Lock className="h-3.5 w-3.5 ml-auto opacity-40" />}
-                                </Button>
-                            )}
-                            {isOwner && project.status !== "analyzing" && (
-                                <Button
-                                    variant="ghost"
-                                    className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
-                                    disabled={!!actionLoading}
-                                    onClick={handleDelete}
-                                >
-                                    {actionLoading === "delete" ? (
-                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <Trash2 className="mr-2 h-4 w-4" />
-                                    )}
-                                    Delete Project
-                                </Button>
-                            )}
+                {/* Header card */}
+                <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-card p-6 rounded-xl border border-border">
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-3 flex-wrap">
+                            <h1 className="text-3xl font-bold tracking-tight">{project.name}</h1>
+                            {getStatusBadge()}
                         </div>
-                    </CardContent>
-                </Card>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+                            <a
+                                href={project.repoUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="flex items-center gap-1 hover:text-primary transition-colors"
+                            >
+                                <Github className="h-4 w-4" />
+                                {project.repoOwner}/{project.name}
+                            </a>
+                            <span className="flex items-center gap-1 text-[11px]">
+                                <Clock className="h-4 w-4" />
+                                Updated {formatDistanceToNow(new Date(project.updatedAt), { addSuffix: true })}
+                            </span>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 w-full md:w-auto flex-wrap">
+                        {/* Share button — owner only */}
+                        {isOwner && (
+                            <Button
+                                variant="outline"
+                                className="w-full md:w-auto"
+                                onClick={() => requirePlan("Share & Collaborate", "starter", "Share your project with team members and collaborators.", () => setShowShare(true))}
+                            >
+                                <Share2 className="mr-2 h-4 w-4" />
+                                {!meetsMinPlan(subscription, "starter") && <Lock className="h-3.5 w-3.5 mr-1 opacity-50" />}
+                                Share
+                            </Button>
+                        )}
+                        {/* Shared badge for non-owners */}
+                        {!isOwner && (
+                            <Badge variant="secondary" className="capitalize">
+                                {project?.shareRole} access
+                            </Badge>
+                        )}
+                        {(project.status === "failed") && isOwner && (
+                            <Button onClick={handleRetry} disabled={!!actionLoading} className="w-full md:w-auto">
+                                {actionLoading === "retry" ? (
+                                    <Loader1 className="mr-2 h-4 w-4" />
+                                ) : (
+                                    <RefreshCw className="mr-2 h-4 w-4" />
+                                )}
+                                Retry Analysis
+                            </Button>
+                        )}
+                        {project.status === "analyzing" && (
+                            <Button asChild variant="secondary" className="w-full md:w-auto">
+                                <Link to={`/projects/${project.id}/live`}>
+                                    <Loader1 className="mr-2 h-4 w-4" /> View Progress
+                                </Link>
+                            </Button>
+                        )}
+                        {project.status === "completed" && (
+                            <Button asChild className="w-full md:w-auto">
+                                <Link to={`/projects/${project.id}/docs`}>
+                                    <BookOpen className="mr-2 h-4 w-4" /> View Documentation
+                                </Link>
+                            </Button>
+                        )}
+                    </div>
+                </div>
+
+                <div className="grid gap-4 md:gap-x-4 md:grid-cols-3">
+                    {/* Main content */}
+                    <Card className="md:col-span-2 order-2 md:order-1 shadow-none">
+                        <CardHeader>
+                            <CardTitle>Project Overview</CardTitle>
+                            <CardDescription>Summary of the latest analysis run.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            {project.status === "completed" ? (
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-4 border-t border-border">
+                                        {project.readme && (
+                                            <div className="space-y-1">
+                                                <p className="text-sm font-medium flex items-center gap-1 text-green-600">
+                                                    <CheckCircle2 className="h-4 w-4" /> README
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">Generated</p>
+                                            </div>
+                                        )}
+                                        {project.apiReference && (
+                                            <div className="space-y-1">
+                                                <p className="text-sm font-medium flex items-center gap-1 text-green-600">
+                                                    <CheckCircle2 className="h-4 w-4" /> API Reference
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">Generated</p>
+                                            </div>
+                                        )}
+                                        {project.schemaDocs && (
+                                            <div className="space-y-1">
+                                                <p className="text-sm font-medium flex items-center gap-1 text-green-600">
+                                                    <CheckCircle2 className="h-4 w-4" /> Schema Docs
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">Generated</p>
+                                            </div>
+                                        )}
+                                        {project.internalDocs && (
+                                            <div className="space-y-1">
+                                                <p className="text-sm font-medium flex items-center gap-1 text-green-600">
+                                                    <CheckCircle2 className="h-4 w-4" /> Internal Docs
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">Generated</p>
+                                            </div>
+                                        )}
+                                        {project.securityReport && (
+                                            <div className="space-y-1">
+                                                <p className="text-sm font-medium flex items-center gap-1 text-yellow-600">
+                                                    <AlertTriangle className="h-4 w-4" /> Security Report
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">Generated</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* GitHub README */}
+                                    <div className="pt-4 border-t border-border">
+                                        <p className="text-sm font-semibold flex items-center gap-1.5 mb-3 text-muted-foreground">
+                                            <Github className="h-4 w-4" /> GitHub README
+                                        </p>
+                                        {isReadmeLoading ? (
+                                            <div className="space-y-2">
+                                                <Skeleton className="h-4 w-3/4" />
+                                                <Skeleton className="h-4 w-full" />
+                                                <Skeleton className="h-4 w-5/6" />
+                                                <Skeleton className="h-4 w-2/3" />
+                                            </div>
+                                        ) : githubReadme ? (
+                                            <div className="prose prose-sm prose-slate dark:prose-invert max-w-none max-h-[480px] overflow-y-auto pr-1">
+                                                <DocRenderer content={githubReadme} />
+                                            </div>
+                                        ) : (
+                                            <p className="text-sm text-muted-foreground italic">No README found in this repository.</p>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : project.status === "analyzing" ? (
+                                <div className="space-y-4">
+                                    <div className="flex items-center gap-3 text-muted-foreground">
+                                        <Loader1 className="h-5 w-5 text-primary" />
+                                        <p>Analysis is currently running. This may take a few minutes.</p>
+                                    </div>
+                                    <div className="space-y-2 pt-4">
+                                        <Skeleton className="h-4 w-[250px]" />
+                                        <Skeleton className="h-4 w-[200px]" />
+                                        <Skeleton className="h-4 w-[300px]" />
+                                    </div>
+                                </div>
+                            ) : project.status === "failed" ? (
+                                <div className="flex flex-col items-center justify-center py-12 text-center border border-dashed border-destructive/30 rounded-lg bg-destructive/5">
+                                    <AlertTriangle className="h-10 w-10 text-destructive mb-3" />
+                                    <h3 className="font-medium text-destructive">Analysis Failed</h3>
+                                    <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+                                        The pipeline encountered an error. Click "Retry Analysis" to run it again.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-12 text-center border border-dashed border-border rounded-lg bg-muted/30">
+                                    <PlayCircle className="h-10 w-10 text-muted-foreground mb-3" />
+                                    <h3 className="font-medium">No Analysis Data</h3>
+                                    <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+                                        Archived project — no new analyses will run.
+                                    </p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+
+                    {/* Actions sidebar */}
+                    <Card className="order-1 md:order-2 shadow-none">
+                        <CardHeader>
+                            <CardTitle>Actions</CardTitle>
+                            <CardDescription>Manage exports and project settings.</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {exportMessage && (
+                                <div className={`rounded-md p-2 text-xs ${exportMessage.startsWith("✅") ? "bg-green-50 text-green-800 border border-green-200" : "bg-destructive/10 text-destructive"}`}>
+                                    {exportMessage}
+                                </div>
+                            )}
+                            <Button
+                                variant="outline"
+                                className="w-full justify-start"
+                                disabled={project.status !== "completed" || !!actionLoading}
+                                onClick={() => requirePlan("PDF Export", "starter", "Export your documentation as a PDF file.", handleExportPdf)}
+                            >
+                                {actionLoading === "pdf" ? (
+                                    <Loader1 className="mr-2 h-4 w-4" />
+                                ) : (
+                                    <Download className="mr-2 h-4 w-4" />
+                                )}
+                                Export to PDF
+                                {!meetsMinPlan(subscription, "starter") && <Lock className="h-3.5 w-3.5 ml-auto opacity-40" />}
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="w-full justify-start"
+                                disabled={project.status !== "completed" || !!actionLoading}
+                                onClick={() => requirePlan("GitHub Actions Export", "team", "Export your documentation as a GitHub Actions YAML workflow.", handleExportYaml)}
+                            >
+                                {actionLoading === "yaml" ? (
+                                    <Loader1 className="mr-2 h-4 w-4" />
+                                ) : (
+                                    <FileCode className="mr-2 h-4 w-4" />
+                                )}
+                                Export GitHub Actions YAML
+                                {!meetsMinPlan(subscription, "team") && <Lock className="h-3.5 w-3.5 ml-auto opacity-40" />}
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="w-full justify-start"
+                                disabled={project.status !== "completed" || !!actionLoading}
+                                onClick={() => requirePlan("Notion Export", "team", "Push your documentation directly to Notion.", handleExportNotion)}
+                            >
+                                {actionLoading === "notion" ? (
+                                    <Loader1 className="mr-2 h-4 w-4" />
+                                ) : (
+                                    <ExternalLink className="mr-2 h-4 w-4" />
+                                )}
+                                Push to Notion
+                                {!meetsMinPlan(subscription, "team") && <Lock className="h-3.5 w-3.5 ml-auto opacity-40" />}
+                            </Button>
+                            <div className="border-t border-border pt-2 space-y-1">
+                                {isOwner && project.status !== "archived" && project.status !== "analyzing" && (
+                                    <Button
+                                        variant="ghost"
+                                        className="w-full justify-start text-muted-foreground hover:text-foreground"
+                                        disabled={!!actionLoading}
+                                        onClick={() => requirePlan("Archive Project", "starter", "Archive projects to keep your workspace organised.", handleArchive)}
+                                    >
+                                        {actionLoading === "archive" ? (
+                                            <Loader1 className="mr-2 h-4 w-4" />
+                                        ) : (
+                                            <Archive className="mr-2 h-4 w-4" />
+                                        )}
+                                        Archive Project
+                                        {!meetsMinPlan(subscription, "starter") && <Lock className="h-3.5 w-3.5 ml-auto opacity-40" />}
+                                    </Button>
+                                )}
+                                {isOwner && project.status !== "analyzing" && (
+                                    <Button
+                                        variant="ghost"
+                                        className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        disabled={!!actionLoading}
+                                        onClick={handleDelete}
+                                    >
+                                        {actionLoading === "delete" ? (
+                                            <Loader1 className="mr-2 h-4 w-4" />
+                                        ) : (
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                        )}
+                                        Delete Project
+                                    </Button>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
-        </div>
 
-        {/* Share Panel */}
-        {project && (
-            <SharePanel
-                open={showShare}
-                onOpenChange={setShowShare}
-                projectId={project.id}
-                projectName={project.name}
-                isOwner={isOwner}
+            {/* Share Panel */}
+            {project && (
+                <SharePanel
+                    open={showShare}
+                    onOpenChange={setShowShare}
+                    projectId={project.id}
+                    projectName={project.name}
+                    isOwner={isOwner}
+                />
+            )}
+
+            <UpgradeModal
+                open={upgradeOpen}
+                onClose={() => setUpgradeOpen(false)}
+                featureName={upgradeFeature.name}
+                requiredPlan={upgradeFeature.plan}
+                description={upgradeFeature.description}
             />
-        )}
-
-        <UpgradeModal
-            open={upgradeOpen}
-            onClose={() => setUpgradeOpen(false)}
-            featureName={upgradeFeature.name}
-            requiredPlan={upgradeFeature.plan}
-            description={upgradeFeature.description}
-        />
-    </>
+        </>
     )
 }

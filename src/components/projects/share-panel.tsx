@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react"
-import { UserPlus, X, Mail, Shield, Eye, Pencil, RotateCcw, Ban, Loader2, Check, AlertCircle, User } from "lucide-react"
+import { UserPlus, X, Mail, Shield, Eye, Pencil, RotateCcw, Ban, Check, AlertCircle, User } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,6 +9,7 @@ import { sharingApi, ApiShare } from "@/lib/api"
 import { useSubscriptionStore, hasFeature, meetsMinPlan } from "@/store/subscription"
 import { UpgradeModal } from "@/components/billing/UpgradeModal"
 import { formatDistanceToNow } from "date-fns"
+import Loader1 from "../ui/loader1"
 
 // ─────────────────────────────────────────────────────────────
 // Types
@@ -281,7 +282,7 @@ export function SharePanel({ open, onOpenChange, projectId, projectName, isOwner
             </div>
             <Button type="submit" disabled={isInviting || !inviteEmail.trim()} className="shrink-0">
               {isInviting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <Loader1 className="h-4 w-4 " />
               ) : (
                 <UserPlus className="h-4 w-4" />
               )}
@@ -312,7 +313,7 @@ export function SharePanel({ open, onOpenChange, projectId, projectName, isOwner
         <div className="flex-1 overflow-y-auto min-h-0 space-y-1">
           {isLoadingShares ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <Loader1 className="h-5 w-5  text-muted-foreground" />
             </div>
           ) : loadError ? (
             <div className="rounded-md bg-destructive/10 text-destructive text-sm p-3 flex items-center gap-2">
@@ -392,7 +393,7 @@ export function SharePanel({ open, onOpenChange, projectId, projectName, isOwner
                               onClick={() => handleResend(share._id)}
                             >
                               {busy && rowAction?.action === "resend" ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                <Loader1 className="h-3.5 w-3.5 " />
                               ) : (
                                 <RotateCcw className="h-3.5 w-3.5" />
                               )}
@@ -413,7 +414,7 @@ export function SharePanel({ open, onOpenChange, projectId, projectName, isOwner
                             }
                           >
                             {busy && (rowAction?.action === "revoke" || rowAction?.action === "cancel") ? (
-                              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                              <Loader1 className="h-3.5 w-3.5 " />
                             ) : (
                               <Ban className="h-3.5 w-3.5" />
                             )}

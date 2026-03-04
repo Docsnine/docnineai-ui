@@ -6,7 +6,6 @@ import { useState } from "react"
 import {
     ArrowRight,
     Check,
-    Loader2,
     Minus,
     Star,
     Users,
@@ -28,6 +27,7 @@ import { useAuthStore } from "@/store/auth"
 import { useSubscriptionStore } from "@/store/subscription"
 import { cn } from "@/lib/utils"
 import { useNavigate } from "react-router-dom"
+import Loader1 from "../ui/loader1"
 
 // ── Plan config ────────────────────────────────────────────────────────────
 
@@ -129,7 +129,7 @@ function MiniPlanCard({
                 onClick={() => onSelect(plan)}
             >
                 {isLoading ? (
-                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    <Loader1 className="mr-1.5 h-3.5 w-3.5" />
                 ) : isCurrent ? (
                     "Current plan"
                 ) : plan.id === "free" ? (
@@ -259,7 +259,7 @@ export function PlansModal({ open, onClose }: PlansModalProps) {
 
                 {plans.length === 0 ? (
                     <div className="flex justify-center py-12">
-                        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                        <Loader1 className="h-6 w-6 text-muted-foreground" />
                     </div>
                 ) : (
                     <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 pt-2">
