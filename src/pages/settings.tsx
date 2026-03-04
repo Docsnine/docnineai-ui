@@ -24,9 +24,12 @@ import {
     KeyRound,
     Eye,
     EyeOff,
+    Puzzle,
+    CreditCard,
 } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
+import { BillingTab } from "@/pages/billing"
 
 // ── Copy button ──────────────────────────────────────────────────────────────
 function CopyButton({ text, className }: { text: string; className?: string }) {
@@ -698,34 +701,86 @@ function NotionCard() {
     )
 }
 
+// ── Tab nav ───────────────────────────────────────────────────────────────────
+const TABS = [
+    { id: "integrations", label: "Integrations", icon: Puzzle },
+    { id: "billing", label: "Billing & Subscription", icon: CreditCard },
+] as const
+type TabId = typeof TABS[number]["id"]
+
 // ── Main page ────────────────────────────────────────────────────────────────
 export function SettingsPage() {
     const [searchParams, setSearchParams] = useSearchParams()
     const googleDocsStatus = searchParams.get("googleDocs") as "connected" | "error" | null
+    const activeTab = (searchParams.get("tab") ?? "integrations") as TabId
+
+    const setTab = (tab: TabId) => {
+        setSearchParams((prev) => {
+            const next = new URLSearchParams(prev)
+            next.set("tab", tab)
+            // Clear googleDocs status when switching away
+            if (tab !== "integrations") next.delete("googleDocs")
+            return next
+        }, { replace: true })
+    }
 
     useEffect(() => {
         if (googleDocsStatus) {
-            setSearchParams({}, { replace: true })
+            setSearchParams((prev) => {
+                const next = new URLSearchParams(prev)
+                next.set("tab", "integrations")
+                return next
+            }, { replace: true })
         }
     }, [googleDocsStatus, setSearchParams])
 
+    const maxW = activeTab === "billing" ? "max-w-3xl" : "max-w-2xl"
+
     return (
         <div className="flex justify-center py-7 px-4">
-            <div className="w-full max-w-2xl space-y-6">
+            <div className={cn("w-full space-y-6", maxW)}>
+                {/* Page header */}
                 <div>
                     <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
                         <Settings className="h-7 w-7" />
                         Settings
                     </h1>
                     <p className="text-muted-foreground mt-1">
-                        Configure integrations and automation for your Docnine account.
+                        Manage integrations, billing, and automation for your account.
                     </p>
                 </div>
 
-                <GitHubCard />
-                <GoogleDocsCard initialStatus={googleDocsStatus ?? undefined} />
-                <NotionCard />
-                <WebhookCard />
+                {/* Tab nav */}
+                <div className="flex gap-1 border-b border-border pb-0">
+                    {TABS.map(({ id, label, icon: Icon }) => (
+                        <button
+                            key={id}
+                            type="button"
+                            onClick={() => setTab(id)}
+                            className={cn(
+                                "inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors",
+                                activeTab === id
+                                    ? "border-primary text-foreground"
+                                    : "border-transparent text-muted-foreground hover:text-foreground hover:border-border"
+                            )}
+                        >
+                            <Icon className="h-4 w-4" />
+                            {label}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Tab content */}
+                {activeTab === "billing" ? (
+                    <BillingTab />
+                ) : (
+                    <>
+                        <GitHubCard />
+                        <GoogleDocsCard initialStatus={googleDocsStatus ?? undefined} />
+                        <NotionCard />
+                        <WebhookCard />
+                    </>
+                )}
             </div>
         </div>
     )

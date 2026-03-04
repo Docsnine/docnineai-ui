@@ -3,16 +3,25 @@ import { Link, Outlet, useLocation, useNavigate, useSearchParams } from "react-r
 import { BookOpen, Github, Search, FolderKanban, User, Settings, LogOut, BookDown, TerminalIcon, Menu, X } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { useAuthStore } from "@/store/auth"
+import { useSubscriptionStore } from "@/store/subscription"
 import { authApi } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useTheme } from "../theme-provider"
+import ApplicationLogo from "../logo"
+import { PlanBadge } from "@/components/billing/PlanBadge"
 
 export function DashboardLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const { user, clearAuth } = useAuthStore()
+  const { load: loadSubscription, reset: resetSubscription } = useSubscriptionStore()
+
+  // Load subscription once when the layout mounts (user is authenticated)
+  useEffect(() => {
+    loadSubscription()
+  }, [loadSubscription])
 
   const searchValue = searchParams.get("q") ?? ""
 
@@ -73,6 +82,7 @@ export function DashboardLayout() {
 
     } finally {
       clearAuth()
+      resetSubscription()
       navigate("/login", { replace: true })
     }
   }
@@ -94,15 +104,10 @@ export function DashboardLayout() {
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
 
-            <Link to="/projects" className="flex items-center gap-2 font-semibold text-primary">
-              <img
-                src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
-                alt="Docnine Logo"
-                className="h-7 w-auto"
-              />
-            </Link>
+            <ApplicationLogo link="/projects" className="!h-7" />
 
             <div className="h-4 w-px bg-border hidden md:block" />
+            
             <a
               href="https://github.com/Docsnine"
               target="_blank"
@@ -142,6 +147,9 @@ export function DashboardLayout() {
                   <div className="px-4 py-3 border-b border-border">
                     <p className="text-sm font-medium truncate">{user?.name}</p>
                     <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                    <div className="mt-1.5">
+                      <PlanBadge showStatus />
+                    </div>
                   </div>
                   <div className="flex items-center justify-between px-4 text-sm text-muted-foreground">
                     <span>Theme</span>

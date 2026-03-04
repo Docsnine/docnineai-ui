@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { ThemeToggle } from './theme-toggle'
 import { Mail, MessageSquare, Menu, X } from 'lucide-react'
 import { useTheme } from './theme-provider'
+import ApplicationLogo from './logo'
 
 function TopHeader() {
     const { theme } = useTheme()
@@ -28,19 +29,13 @@ function TopHeader() {
             {/* Main nav row */}
             <div className="container mx-auto px-4 h-16 flex items-center justify-between">
                 {/* Logo */}
-                <Link to="/" className="flex items-center gap-3">
-                    <img
-                        src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
-                        alt="Docnine Logo"
-                        className="h-8 w-auto"
-                    />
-                </Link>
+                <ApplicationLogo />
 
                 {/* Desktop links */}
                 <div className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
-                    <a href="#features" className="hover:text-foreground transition-colors">Features</a>
-                    <a href="#docs" className="hover:text-foreground transition-colors">Docs</a>
+                    <a href="#Docs" className="hover:text-foreground transition-colors">Docs</a>
                     <a href="https://github.com/Docsnine" target="_blank" rel="noreferrer" className="hover:text-foreground transition-colors">GitHub</a>
+                    <a href="/pricing" className="hover:text-foreground transition-colors">Pricing</a>
                     <Link to="/contact" className="hover:text-foreground transition-colors">Contact Us</Link>
                 </div>
 

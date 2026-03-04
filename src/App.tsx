@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
+import { BrowserRouter as Router, Routes, Route, Navigate, useSearchParams } from "react-router-dom"
 import { LandingPage } from "@/pages/landing"
 import { LoginPage } from "@/pages/auth/login"
 import { SignupPage } from "@/pages/auth/signup"
@@ -16,6 +16,8 @@ import { DocumentationsPage } from "@/pages/documentations"
 import { LogsPage } from "@/pages/logs"
 import { ProfilePage } from "@/pages/profile"
 import { SettingsPage } from "@/pages/settings"
+import { PricingPage } from "@/pages/pricing"
+// BillingPage now lives inside Settings — kept import-free
 import { useAuthStore } from "@/store/auth"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Loader2 } from "lucide-react"
@@ -25,6 +27,18 @@ import { ContactPage } from "@/pages/guest/contact"
 import { AcceptInvitePage } from "@/pages/auth/accept-invite"
 import { GithubOAuthCompletePage } from "@/components/projects/github-oauth-complete"
 import { PublicPortalPage } from "@/pages/docs/public-portal"
+
+/**
+ * Forwards the /billing route plus any Flutterwave callback params
+ * (?transaction_id, ?tx_ref, ?status …) to /settings?tab=billing
+ * so the BillingTab can verify the payment after redirect.
+ */
+function BillingRedirect() {
+  const [searchParams] = useSearchParams()
+  const forward = new URLSearchParams(searchParams)
+  forward.set('tab', 'billing')
+  return <Navigate to={`/settings?${forward.toString()}`} replace />
+}
 
 /**
  * ProtectedRoute — redirects unauthenticated users to /login.
@@ -97,7 +111,7 @@ function AppRoutes() {
 
   return (
     <Routes>
-      {/* Public-only Routes — redirect authenticated users to /projects */}
+      {/* Public Routes — accessible by all */}
       <Route path="/" element={<PublicOnlyRoute><LandingPage /></PublicOnlyRoute>} />
       <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
       <Route path="/signup" element={<PublicOnlyRoute><SignupPage /></PublicOnlyRoute>} />
@@ -114,6 +128,8 @@ function AppRoutes() {
       <Route path="/github/oauth/complete" element={<GithubOAuthCompletePage />} />
       {/* Public documentation portal — no auth required */}
       <Route path="/docs/:slug" element={<PublicPortalPage />} />
+      {/* Public pricing page — no auth required */}
+      <Route path="/pricing" element={<PricingPage />} />
 
       {/* Protected Routes — nested under DashboardLayout */}
       <Route
@@ -133,6 +149,7 @@ function AppRoutes() {
         <Route path="logs" element={<LogsPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="billing" element={<BillingRedirect />} />
       </Route>
 
       {/* Fallback */}

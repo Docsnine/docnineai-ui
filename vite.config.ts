@@ -5,7 +5,9 @@ import { defineConfig, loadEnv } from "vite";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, ".", "");
-  const BACKEND_URL = env.VITE_API_URL || "";
+  // In local dev VITE_API_URL is empty — proxy to localhost:4000 directly.
+  // Set VITE_API_URL to an ngrok URL only when the *frontend* is served externally.
+  const BACKEND_URL = env.VITE_API_URL || "http://localhost:4000";
 
   // For every backend-bound path we need a bypass check:
   // Browser page navigations send Accept: text/html — those must be served
@@ -33,13 +35,16 @@ export default defineConfig(({ mode }) => {
     },
   });
 
-  const proxyConfig: Record<string, object> = BACKEND_URL ? {
+  const proxyConfig: Record<string, object> = {
     "/auth":     makeProxy(),
     "/github":   makeProxy(),
     "/projects": makeProxy(),
+    "/billing":  makeProxy(),
+    "/portal":   makeProxy(),
+    "/webhook":  makeProxy(),
     "/api":      makeProxy(),
     "/health":   makeProxy(),
-  } : {};
+  };
 
   return {
     plugins: [react(), tailwindcss()],

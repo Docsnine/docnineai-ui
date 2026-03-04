@@ -993,3 +993,232 @@ export const apiSpecApi = {
       body: JSON.stringify(opts),
     }),
 }
+
+// ---------------------------------------------------------------------------
+// Billing types
+// ---------------------------------------------------------------------------
+
+export interface BillingPlanLimits {
+  projects: number | null
+  seats: number | null
+  extraSeatPriceMonthly: number | null
+  attachmentsPerProject: number | null
+  maxFileSizeMb: number
+  aiChatsPerMonth: number | null
+  portals: number | null
+  versionHistoryDays: number | null
+  exportFormats: string[]
+}
+
+export interface BillingPlanFeatures {
+  shareViewOnly: boolean
+  shareEdit: boolean
+  maxShares: number | null
+  archiveRestore: boolean
+  customDomain: boolean
+  docApproval: boolean
+  progressTracker: boolean
+  openApiImporter: boolean
+  apiWebhookAccess: boolean
+  githubSync: boolean
+}
+
+export interface BillingPlan {
+  id: string
+  name: string
+  tagline: string
+  prices: {
+    monthly: number      // dollars
+    annual: number       // dollars per month
+    annualTotal: number | null
+    savingsPercent: number
+  }
+  limits: BillingPlanLimits
+  features: BillingPlanFeatures
+}
+
+export type SubscriptionStatus =
+  | 'free'
+  | 'trialing'
+  | 'active'
+  | 'past_due'
+  | 'cancelled'
+  | 'paused'
+
+export interface SubscriptionData {
+  plan: string
+  planName: string
+  billingCycle: 'monthly' | 'annual' | null
+  status: SubscriptionStatus
+  seats: number
+  extraSeats: number
+  trialEndsAt: string | null
+  currentPeriodStart: string | null
+  currentPeriodEnd: string | null
+  cancelAtPeriodEnd: boolean
+  pendingPlan: string | null
+  pauseEndsAt: string | null
+  limits: BillingPlanLimits
+  features: BillingPlanFeatures
+}
+
+export interface UsageData {
+  aiChatsUsed: number
+  aiChatsResetAt: string | null
+  projectCount: number
+  portalCount: number
+  activeShareCount: number
+}
+
+export type InvoiceStatus = 'pending' | 'paid' | 'failed' | 'refunded' | 'void'
+
+export interface InvoiceData {
+  _id: string
+  invoiceNumber: string
+  amount: number            // cents
+  currency: string
+  description: string
+  status: InvoiceStatus
+  paymentMethodSnapshot: string | null
+  paidAt: string | null
+  periodStart: string | null
+  periodEnd: string | null
+  createdAt: string
+}
+
+export interface PaymentMethodData {
+  _id: string
+  type: 'card' | 'mobile_money' | 'bank_transfer'
+  isDefault: boolean
+  displayLabel: string
+  /** ISO currency code the token was issued in (e.g. NGN, KES, USD) */
+  currency: string
+  card?: {
+    last4: string
+    brand: string
+    expMonth: number
+    expYear: number
+  }
+  mobileMoney?: {
+    phone: string
+    network: string
+    country: string
+  }
+  createdAt: string
+}
+
+// ---------------------------------------------------------------------------
+// Billing API
+// ---------------------------------------------------------------------------
+
+export const billingApi = {
+  /** Public — no auth required. Returns all plan definitions. */
+  getPlans: () =>
+    apiFetch<{ plans: BillingPlan[] }>('/billing/plans', { skipAuth: true }),
+
+  /** Returns current subscription state + usage counters for the authed user. */
+  getSubscription: () =>
+    apiFetch<{ subscription: SubscriptionData; usage: UsageData }>(
+      '/billing/subscription',
+    ),
+
+  /**
+   * Initiate checkout.
+   * For free plan trials → returns `{ trial: true }`.
+   * For paid plans → returns `{ paymentLink, txRef }` to redirect to FW.
+   */
+  checkout: (
+    planId: string,
+    cycle: 'monthly' | 'annual',
+    seats?: number,
+    startTrial?: boolean,
+  ) =>
+    apiFetch<{ trial?: boolean; paymentLink?: string; txRef?: string }>(
+      '/billing/checkout',
+      {
+        method: 'POST',
+        body: JSON.stringify({ planId, cycle, seats, startTrial }),
+      },
+    ),
+
+  /** Verify a Flutterwave payment after redirect. Pass either txRef or transactionId. */
+  verifyPayment: (txRef?: string, transactionId?: number) =>
+    apiFetch<{ subscription: SubscriptionData }>('/billing/verify-payment', {
+      method: 'POST',
+      body: JSON.stringify({ txRef, transactionId }),
+    }),
+
+  /** Upgrade, downgrade or switch billing cycle. */
+  changePlan: (planId: string, cycle: 'monthly' | 'annual', seats?: number) =>
+    apiFetch<{
+      type: 'upgrade' | 'downgrade' | 'none'
+      immediate?: boolean          // true = card charged on the spot
+      paymentLink?: string         // present when no saved card → redirect here
+      effectiveAt?: string         // ISO date, for downgrades
+    }>('/billing/change-plan', {
+      method: 'POST',
+      body: JSON.stringify({ planId, cycle, seats }),
+    }),
+
+  /** Cancel at period end (or immediately if on trial). */
+  cancel: (reason?: string) =>
+    apiFetch<{ subscription: SubscriptionData }>('/billing/cancel', {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }),
+
+  /** Pause subscription for 1-3 months. */
+  pause: (months?: number) =>
+    apiFetch<{ subscription: SubscriptionData }>('/billing/pause', {
+      method: 'POST',
+      body: JSON.stringify({ months }),
+    }),
+
+  /** Add extra seats (Pro/Team only). Prorated charge applied immediately or returns payment link. */
+  addSeats: (seats: number) =>
+    apiFetch<
+      | { type: 'immediate'; extraSeats: number; totalSeats: number }
+      | { type: 'payment_required'; paymentLink: string }
+    >('/billing/seats', {
+      method: 'POST',
+      body: JSON.stringify({ seats }),
+    }),
+
+  /** List saved payment methods for the authed user. */
+  getPaymentMethods: () =>
+    apiFetch<{ methods: PaymentMethodData[] }>('/billing/payment-methods'),
+
+  /** Remove a saved payment method. */
+  deletePaymentMethod: (id: string) =>
+    apiFetch<null>(`/billing/payment-methods/${id}`, { method: 'DELETE' }),
+
+  /** Set a saved payment method as the default for renewals. */
+  setDefaultPaymentMethod: (id: string) =>
+    apiFetch<{ method: PaymentMethodData }>(
+      `/billing/payment-methods/${id}/default`,
+      { method: 'PATCH' },
+    ),
+
+  /** Paginated billing history. */
+  getBillingHistory: (page = 1, limit = 20) =>
+    apiFetch<{ invoices: InvoiceData[]; total: number; page: number; limit: number }>(
+      `/billing/history?page=${page}&limit=${limit}`,
+    ),
+
+  /**
+   * Returns a direct URL to download the invoice PDF.
+   * Use as an anchor href — the browser will stream the PDF.
+   */
+  downloadInvoicePdfUrl: (id: string) =>
+    `${API_BASE}/billing/invoices/${id}/pdf`,
+
+  /** Update company name / VAT number on a paid invoice. */
+  updateInvoiceDetails: (
+    id: string,
+    data: { companyName?: string; vatNumber?: string },
+  ) =>
+    apiFetch<{ invoice: InvoiceData }>(`/billing/invoices/${id}/details`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+}

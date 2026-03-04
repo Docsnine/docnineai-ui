@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react"
-import { UserPlus, X, Mail, Shield, Eye, Pencil, RotateCcw, Ban, Loader2, Check, AlertCircle, Crown } from "lucide-react"
+import { UserPlus, X, Mail, Shield, Eye, Pencil, RotateCcw, Ban, Loader2, Check, AlertCircle, User } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -28,7 +28,7 @@ function RoleBadge({ role }: { role: "owner" | "editor" | "viewer" }) {
   if (role === "owner")
     return (
       <Badge variant="secondary" className="flex items-center gap-1 text-xs">
-        <Crown className="h-3 w-3 text-yellow-500" /> Owner
+        <User className="h-3 w-3 text-yellow-500" /> Owner
       </Badge>
     )
   if (role === "editor")

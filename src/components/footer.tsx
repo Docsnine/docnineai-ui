@@ -2,6 +2,7 @@ import { Github, MessageSquare, Twitter } from 'lucide-react'
 import React from 'react'
 import { Link } from 'react-router-dom'
 import { useTheme } from './theme-provider';
+import ApplicationLogo from './logo';
 
 function Footer() {
     const { theme } = useTheme();
@@ -14,11 +15,7 @@ function Footer() {
                     <div className="grid grid-cols-1 md:grid-cols-5 gap-12 mb-16">
                         <div className="md:col-span-2">
                             <div className="flex items-center mb-6">
-                                <img
-                                    src={theme === "dark" ? "/logo-dark.png" : "/logo-light.png"}
-                                    alt="Docnine Logo"
-                                    className="h-24 w-auto"
-                                />
+                                <ApplicationLogo className='!h-24' />
                             </div>
                             <p className="text-muted-foreground leading-relaxed max-w-sm mb-8">
                                 Documentation that Works as Hard as You Do.

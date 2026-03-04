@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { formatDistanceToNow } from "date-fns"
 import { useProjectStore, ProjectStatus } from "@/store/projects"
+import { useSubscriptionStore } from "@/store/subscription"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Select } from "@/components/ui/select"
@@ -9,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { NewProjectModal } from "@/components/projects/new-project"
+import { UpgradeModal } from "@/components/billing/UpgradeModal"
 import {
     Search,
     Plus,
@@ -60,9 +62,27 @@ export function DashboardPage() {
     const navigate = useNavigate()
     const [searchParams, setSearchParams] = useSearchParams()
 
+    const { subscription, usage } = useSubscriptionStore()
     const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false)
     const [openModalToGithubStep, setOpenModalToGithubStep] = useState(false)
     const [githubNotice, setGithubNotice] = useState<{ type: "success" | "error"; message: string } | null>(null)
+    const [upgradeOpen, setUpgradeOpen] = useState(false)
+
+    // Returns true if the user has hit their project limit
+    const isAtProjectLimit = () => {
+      if (!subscription || !usage) return false
+      const limit = subscription.limits.projects
+      if (limit === null) return false // unlimited
+      return usage.projectCount >= limit
+    }
+
+    const handleNewProject = () => {
+      if (isAtProjectLimit()) {
+        setUpgradeOpen(true)
+        return
+      }
+      setIsNewProjectModalOpen(true)
+    }
 
     // Search is driven by the ?q= URL param so the navbar search stays in sync.
     const searchQuery = searchParams.get("q") ?? ""
@@ -199,7 +219,7 @@ export function DashboardPage() {
     return (
         <div>
             <TopBar title="Projects" description="Manage Your projects and Collaborations.">
-                <Button onClick={() => setIsNewProjectModalOpen(true)} className="shrink-0">
+                <Button onClick={handleNewProject} className="shrink-0">
                     <Plus className="mr-2 h-4 w-4" /> New Project
                 </Button>
             </TopBar>
@@ -303,7 +323,7 @@ export function DashboardPage() {
                                 ? "No projects match your current filters. Try adjusting your search."
                                 : "You haven't created any projects yet."}
                         </p>
-                        <Button variant="outline" className="mt-6" onClick={() => setIsNewProjectModalOpen(true)}>
+                        <Button variant="outline" className="mt-6" onClick={handleNewProject}>
                             <Plus className="mr-2 h-4 w-4" /> Create Project
                         </Button>
                     </div>
@@ -437,6 +457,13 @@ export function DashboardPage() {
                         if (!v) setOpenModalToGithubStep(false)
                     }}
                     openToGithubStep={openModalToGithubStep}
+                />
+                <UpgradeModal
+                    open={upgradeOpen}
+                    onClose={() => setUpgradeOpen(false)}
+                    featureName="More Projects"
+                    requiredPlan="starter"
+                    description={`You've reached the ${subscription?.limits.projects ?? 3} project limit on the ${subscription?.planName ?? 'Free'} plan. Upgrade to create unlimited projects.`}
                 />
 
                 {/* ── Shared with Me ────────────────────────────────── */}
