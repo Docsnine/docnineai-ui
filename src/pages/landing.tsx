@@ -10,10 +10,12 @@ import CTA from "@/components/CTA"
 export function LandingPage() {
   return (
     <div className="relative min-h-screen bg-background text-foreground overflow-hidden font-sans">
-      <BackgroundGrid />
+      <div className="absolute inset-x-0 top-0 h-1/2 overflow-hidden pointer-events-none">
+        <BackgroundGrid />
+      </div>
 
       {/* Top Left Glow */}
-      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-foreground/10 blur-[120px] pointer-events-none z-0" />
+      <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-foreground/5 blur-[120px] pointer-events-none z-0" />
 
       {/* Center Cyan Glow */}
       <div className="absolute top-[40%] left-[50%] translate-x-[-50%] translate-y-[-50%] w-[40%] h-[30%] rounded-full bg-primary/20 blur-[100px] pointer-events-none z-0" />
@@ -21,7 +23,7 @@ export function LandingPage() {
       <TopHeader />
 
       {/* Hero Section */}
-      <main className="relative z-10 flex flex-col items-center justify-center pt-24 pb-20 px-4 text-center">
+      <section className="relative z-10 flex flex-col items-center justify-center pt-24 pb-20 px-4 text-center">
         {/* Live Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-border bg-muted/50 backdrop-blur-sm mb-12">
           <Sparkles className="h-4 w-4 text-primary" />
@@ -44,10 +46,10 @@ export function LandingPage() {
         <div className="flex flex-col sm:flex-row items-center gap-4">
           <Button
             asChild
-            className="bg-foreground text-background hover:bg-foreground/90 rounded-full px-8 h-14 text-lg font-semibold w-full sm:w-auto shadow-[0_0_40px_rgba(0,210,200,0.15)] dark:shadow-[0_0_40px_rgba(255,255,255,0.3)] transition-all hover:shadow-[0_0_60px_rgba(0,210,200,0.25)] dark:hover:shadow-[0_0_60px_rgba(255,255,255,0.4)]"
+            className="bg-foreground text-background hover:bg-foreground/90 rounded-full px-8 h-14 text-lg font-semibold w-full sm:w-auto  transition-all hover:shadow-[0_0_60px_rgba(0,210,200,0.25)] dark:hover:shadow-[0_0_60px_rgba(255,255,255,0.4)]"
           >
             <Link to="/signup">
-              Get Started for free <ArrowRight className="ml-2 h-5 w-5" />
+              Start for free <ArrowRight className="ml-2 h-5 w-5" />
             </Link>
           </Button>
           <Button
@@ -60,10 +62,10 @@ export function LandingPage() {
             </a>
           </Button>
         </div>
-      </main>
+      </section>
 
       {/* Get Started Steps Section */}
-      <section className="relative z-10 py-24 px-4 border-t border-border bg-background">
+      <section className="relative z-10 py-24 px-4 bg-background">
         <div className="container mx-auto max-w-5xl text-center">
           <h2 className="text-[48px] leading-[48px] font-bold tracking-tight text-foreground mb-6">
             Up and running in 4 steps
