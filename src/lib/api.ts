@@ -254,6 +254,41 @@ export const authApi = {
 
   disconnectNotion: () =>
     apiFetch<void>('/auth/notion', { method: 'DELETE' }),
+
+  /** Webhook Integration — settings-level (global webhook) */
+  getWebhookStatus: () =>
+    apiFetch<{
+      webhookEnabled: boolean
+      hasSecret: boolean
+      lastWebhookAt: string | null
+      lastWebhookStatus: 'success' | 'failed' | 'skipped' | null
+    }>('/auth/webhook/status'),
+
+  getOrInitializeWebhook: () =>
+    apiFetch<{
+      webhookUrl: string
+      secret: string
+      webhookEnabled: boolean
+      lastWebhookAt: string | null
+      lastWebhookStatus: 'success' | 'failed' | 'skipped' | null
+    }>('/auth/webhook/init', { method: 'POST' }),
+
+  rotateWebhookSecret: () =>
+    apiFetch<{
+      webhookUrl: string
+      secret: string
+      webhookEnabled: boolean
+    }>('/auth/webhook/rotate', { method: 'POST' }),
+
+  updateWebhookSettings: (webhookEnabled: boolean) =>
+    apiFetch<{
+      webhookUrl: string
+      webhookEnabled: boolean
+      hasSecret: boolean
+    }>('/auth/webhook', {
+      method: 'PATCH',
+      body: JSON.stringify({ webhookEnabled }),
+    }),
 }
 
 // ── GitHub ────────────────────────────────────────────────────────────────
