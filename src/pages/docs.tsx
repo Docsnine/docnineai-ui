@@ -571,7 +571,7 @@ components:
 
                         <H3 id="webhook-setup">Setup guide</H3>
                         
-                        <H4 className="text-lg font-semibold mt-6 mb-3">Option A — Use a real GitHub webhook (recommended)</H4>
+                        <h4 className="text-lg font-semibold mt-6 mb-3">Option A — Use a real GitHub webhook (recommended)</h4>
                         <p className="text-muted-foreground leading-relaxed mb-4">
                             Set up an actual webhook in your repo settings pointing to <code className="font-mono bg-muted px-1.5 py-0.5 rounded text-sm">https://docnineai-server.vercel.app/api/webhook</code>. GitHub will POST the full push payload with a valid signature computed using your <code className="font-mono bg-muted px-1.5 py-0.5 rounded text-sm">WEBHOOK_SECRET</code>. Your existing handleWebhook code already handles this correctly — no workflow file needed.
                         </p>
@@ -603,11 +603,11 @@ components:
                             </Step>
                         </div>
 
-                        <Callout type="success" className="mt-6">
+                        <Callout type="info" className="mt-6">
                             This is the <strong>recommended approach</strong> because GitHub handles the signature and payload delivery — your server receives verified, complete push event data.
                         </Callout>
 
-                        <H4 className="text-lg font-semibold mt-8 mb-3">Option B — Use GitHub Actions workflow</H4>
+                        <h4 className="text-lg font-semibold mt-8 mb-3">Option B — Use GitHub Actions workflow</h4>
                         <p className="text-muted-foreground leading-relaxed mb-4">
                             If you prefer, you can use a GitHub Actions workflow file that triggers on every push and calls the Docnine API. This approach works but requires maintaining a workflow file and doesn't provide signature verification.
                         </p>
