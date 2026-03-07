@@ -927,7 +927,7 @@ NOTION_PARENT_PAGE_ID=your_page_id_here`} />
                         </Callout>
 
                         <div className="mt-16 pt-8 border-t border-border text-xs text-muted-foreground flex flex-wrap gap-x-6 gap-y-2">
-                            <span>Last updated: March 2026</span>
+                            <span>Last updated: March 2025</span>
                             <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
                             <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>
                             <Link to="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>

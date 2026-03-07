@@ -62,7 +62,7 @@ function Footer() {
                     </div>
 
                     <div className="pt-8 border-t border-border flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-muted-foreground">
-                        <p>© 2026 Docnine. MIT License.</p>
+                        <p>© 2025 Docnine. All Rights Reserved.</p>
                         <div className="flex items-center gap-6">
                             <Link to="/terms" className="hover:text-foreground transition-colors">Terms</Link>
                             <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy</Link>

@@ -21,7 +21,7 @@ export function PrivacyPage() {
                             Privacy Policy
                         </h1>
                         <p className="text-muted-foreground text-lg">
-                            Last updated: March 2, 2026
+                            Last updated: March 2, 2025
                         </p>
                     </div>
 
