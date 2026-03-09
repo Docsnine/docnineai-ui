@@ -573,7 +573,7 @@ components:
 
                         <h4 className="text-lg font-semibold mt-6 mb-3">Option A — Use a real GitHub webhook (recommended)</h4>
                         <p className="text-muted-foreground leading-relaxed mb-4">
-                            Set up an actual webhook in your repo settings pointing to <code className="font-mono bg-muted px-1.5 py-0.5 rounded text-sm">https://docnineai-server.vercel.app/webhook/github</code>. GitHub will POST the full push payload with a valid signature computed using your <code className="font-mono bg-muted px-1.5 py-0.5 rounded text-sm">WEBHOOK_SECRET</code>. Your existing handleWebhook code already handles this correctly — no workflow file needed.
+                            Set up an actual webhook in your repo settings pointing to <code className="font-mono bg-muted px-1.5 py-0.5 rounded text-sm">https://api.docnineai.com/webhook/github</code>. GitHub will POST the full push payload with a valid signature computed using your <code className="font-mono bg-muted px-1.5 py-0.5 rounded text-sm">WEBHOOK_SECRET</code>. Your existing handleWebhook code already handles this correctly — no workflow file needed.
                         </p>
 
                         <div className="rounded-xl border border-border overflow-hidden">
@@ -585,7 +585,7 @@ components:
                             </Step>
                             <Step n={2} title="Fill in the webhook form">
                                 <ul className="list-disc list-inside space-y-2 mt-2">
-                                    <li><strong>Payload URL:</strong> <code className="font-mono bg-muted px-1 rounded text-xs">https://docnineai-server.vercel.app/webhook/github</code></li>
+                                    <li><strong>Payload URL:</strong> <code className="font-mono bg-muted px-1 rounded text-xs">https://api.docnineai.com/webhook/github</code></li>
                                     <li><strong>Content type:</strong> <code className="font-mono bg-muted px-1 rounded text-xs">application/json</code></li>
                                     <li><strong>Secret:</strong> your <code className="font-mono bg-muted px-1 rounded text-xs">WEBHOOK_SECRET</code> from Vercel environment variables</li>
                                     <li><strong>Which events?:</strong> Just the push event</li>
