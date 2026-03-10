@@ -406,6 +406,146 @@ export const githubApi = {
   disconnect: () => apiFetch<void>("/github/disconnect", { method: "DELETE" }),
 };
 
+// ── GitLab ────────────────────────────────────────────────────────────────
+
+export interface GitLabStatus {
+  connected: boolean;
+  gitlabUsername?: string;
+  scopes?: string[];
+  connectedAt?: string;
+}
+
+export interface GitLabRepo {
+  id: number;
+  name: string;
+  path_with_namespace: string;
+  web_url: string;
+  description?: string;
+  visibility: "public" | "private" | "internal";
+  last_activity_at: string;
+}
+
+export interface GitLabReposResponse {
+  repos: GitLabRepo[];
+  page: number;
+  perPage: number;
+  hasNextPage: boolean;
+}
+
+export const gitlabApi = {
+  getStatus: () => apiFetch<GitLabStatus>("/gitlab/status"),
+
+  getOAuthStartUrl: () => apiFetch<{ url: string }>("/gitlab/oauth/start"),
+
+  getRepos: (
+    params: {
+      page?: number;
+      perPage?: number;
+      sort?: string;
+    } = {},
+  ) => {
+    const qs = new URLSearchParams();
+    if (params.page) qs.set("page", String(params.page));
+    if (params.perPage) qs.set("perPage", String(params.perPage));
+    if (params.sort) qs.set("sort", params.sort);
+    return apiFetch<GitLabReposResponse>(`/gitlab/repos?${qs}`);
+  },
+
+  disconnect: () => apiFetch<void>("/gitlab/disconnect", { method: "DELETE" }),
+};
+
+// ── Bitbucket ─────────────────────────────────────────────────────────────
+
+export interface BitbucketStatus {
+  connected: boolean;
+  bitbucketUsername?: string;
+  scopes?: string[];
+  connectedAt?: string;
+}
+
+export interface BitbucketRepo {
+  uuid: string;
+  name: string;
+  full_slug: string;
+  links: { html: { href: string } };
+  description?: string;
+  is_private: boolean;
+  updated_on: string;
+}
+
+export interface BitbucketReposResponse {
+  repos: BitbucketRepo[];
+  page: number;
+  perPage: number;
+  hasNextPage: boolean;
+}
+
+export const bitbucketApi = {
+  getStatus: () => apiFetch<BitbucketStatus>("/bitbucket/status"),
+
+  getOAuthStartUrl: () => apiFetch<{ url: string }>("/bitbucket/oauth/start"),
+
+  getRepos: (
+    params: {
+      page?: number;
+      perPage?: number;
+    } = {},
+  ) => {
+    const qs = new URLSearchParams();
+    if (params.page) qs.set("page", String(params.page));
+    if (params.perPage) qs.set("perPage", String(params.perPage));
+    return apiFetch<BitbucketReposResponse>(`/bitbucket/repos?${qs}`);
+  },
+
+  disconnect: () => apiFetch<void>("/bitbucket/disconnect", { method: "DELETE" }),
+};
+
+// ── Azure DevOps ──────────────────────────────────────────────────────────
+
+export interface AzureStatus {
+  connected: boolean;
+  azureUsername?: string;
+  scopes?: string[];
+  connectedAt?: string;
+}
+
+export interface AzureRepo {
+  id: string;
+  name: string;
+  webUrl: string;
+  projectName: string;
+  projectId?: string;
+  isPrivate: boolean;
+  lastUpdated?: string;
+}
+
+export interface AzureReposResponse {
+  repos: AzureRepo[];
+  page: number;
+  perPage: number;
+  hasNextPage: boolean;
+}
+
+export const azureApi = {
+  getStatus: () => apiFetch<AzureStatus>("/azure/status"),
+
+  getOAuthStartUrl: () => apiFetch<{ url: string }>("/azure/oauth/start"),
+
+  getRepos: (
+    params: {
+      page?: number;
+      perPage?: number;
+    } = {},
+  ) => {
+    const qs = new URLSearchParams();
+    if (params.page) qs.set("page", String(params.page));
+    if (params.perPage) qs.set("perPage", String(params.perPage));
+    return apiFetch<AzureReposResponse>(`/azure/repos?${qs}`);
+  },
+
+  disconnect: () => apiFetch<void>("/azure/disconnect", { method: "DELETE" }),
+};
+
 // ── Projects ──────────────────────────────────────────────────────────────
 
 export type ApiProjectStatus =
@@ -526,11 +666,45 @@ export const projectsApi = {
 
   get: (id: string) => apiFetch<ProjectGetResponse>(`/projects/${id}`),
 
+  /**
+   * Create a project from a repository URL (GitHub, GitLab, Bitbucket, Azure).
+   * The provider is auto-detected from the URL.
+   */
   create: (repoUrl: string) =>
     apiFetch<{ project: ApiProject; streamUrl: string }>("/projects", {
       method: "POST",
       body: JSON.stringify({ repoUrl }),
     }),
+
+  /**
+   * Validate a ZIP file before uploading (optional — checks structure, size, etc).
+   */
+  validateZip: (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return apiFetch<{
+      valid: boolean;
+      message?: string;
+      stats?: { files: number; totalSize: number; languages: string[] };
+    }>("/projects/zip/validate", {
+      method: "POST",
+      body: fd,
+    });
+  },
+
+  /**
+   * Upload a ZIP file and create a project from it.
+   * Automatically extracts and scans the contents.
+   */
+  uploadZip: (file: File, projectName?: string) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    if (projectName) fd.append("projectName", projectName);
+    return apiFetch<{ project: ApiProject; streamUrl: string }>(
+      "/projects/zip/upload",
+      { method: "POST", body: fd },
+    );
+  },
 
   update: (id: string, body: { status: "archived" }) =>
     apiFetch<{ project: ApiProject }>(`/projects/${id}`, {

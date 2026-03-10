@@ -21,18 +21,22 @@ import {
     CheckCircle2,
     AlertCircle,
     RefreshCw,
+    Upload,
+    Plus,
 } from "lucide-react"
 import { useProjectStore } from "@/store/projects"
-import { githubApi, GitHubOrg, GitHubRepo, ApiException } from "@/lib/api"
+import {
+    githubApi,
+    gitlabApi,
+    bitbucketApi,
+    azureApi,
+    projectsApi,
+    GitHubOrg,
+    ApiException,
+} from "@/lib/api"
 import { OrgAccountPicker } from "@/components/projects/org-account-picker"
 import { cn } from "@/lib/utils"
 import Loader1 from "../ui/loader1"
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Organisation selection persistence
-// Saves the last-selected org login (or "" for personal account) in
-// localStorage so it is pre-selected the next time the modal opens.
-// ─────────────────────────────────────────────────────────────────────────────
 
 const SELECTED_ORG_KEY = "docnine:selected-org"
 
@@ -44,32 +48,36 @@ function saveOrg(org: string | null) {
     try { localStorage.setItem(SELECTED_ORG_KEY, org ?? "") } catch { /* ignore */ }
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Form schema
-// ─────────────────────────────────────────────────────────────────────────────
-
 const manualProjectSchema = z.object({
     repoUrl: z
         .string()
         .min(1, "Repository URL is required")
         .refine(
-            (v) => v.includes("github.com") || /^[\w.-]+\/[\w.-]+$/.test(v),
-            "Must be a GitHub URL or owner/repo shorthand",
+            (v) =>
+                v.includes("github.com") ||
+                v.includes("gitlab.com") ||
+                v.includes("bitbucket.org") ||
+                v.includes("dev.azure.com") ||
+                /^[\w.-]+\/[\w.-]+$/.test(v),
+            "Must be a valid repository URL or owner/repo shorthand",
         ),
 })
 
-type ManualProjectFormValues = z.infer<typeof manualProjectSchema>
+const fromScratchSchema = z.object({
+    projectName: z.string().min(1, "Project name is required").min(3, "Project name must be at least 3 characters"),
+})
 
-// ─────────────────────────────────────────────────────────────────────────────
-// RepoList — focused sub-component so the modal stays under ~150 lines
-// ─────────────────────────────────────────────────────────────────────────────
+type ManualProjectFormValues = z.infer<typeof manualProjectSchema>
+type FromScratchFormValues = z.infer<typeof fromScratchSchema>
+type Step = "source" | "github" | "gitlab" | "bitbucket" | "azure" | "manual" | "zip" | "from-scratch"
+type ProviderKey = "github" | "gitlab" | "bitbucket" | "azure"
 
 interface RepoListProps {
-    repos: GitHubRepo[]
+    repos: any[]
     loading: boolean
     hasNextPage: boolean
-    selectedRepo: GitHubRepo | null
-    onSelect: (repo: GitHubRepo) => void
+    selectedRepo: any | null
+    onSelect: (repo: any) => void
     onLoadMore: () => void
 }
 
@@ -86,28 +94,34 @@ function RepoList({ repos, loading, hasNextPage, selectedRepo, onSelect, onLoadM
     }
     return (
         <div className="divide-y divide-border">
-            {repos.map((repo) => (
-                <button
-                    key={repo.id}
-                    onClick={() => onSelect(repo)}
-                    className={cn(
-                        "flex w-full items-center justify-between p-3 text-left text-sm transition-colors hover:bg-muted",
-                        selectedRepo?.id === repo.id && "bg-primary/5",
-                    )}
-                >
-                    <div className="min-w-0">
-                        <span className="font-medium">{repo.full_name}</span>
-                        {repo.description && (
-                            <p className="mt-0.5 truncate max-w-87.5 text-xs text-muted-foreground">
-                                {repo.description}
-                            </p>
+            {repos.map((repo) => {
+                const displayName = repo.full_name || repo.path_with_namespace || repo.full_slug || repo.name
+                const isSelected =
+                    selectedRepo?.id === repo.id ||
+                    selectedRepo?.uuid === repo.uuid ||
+                    selectedRepo?.path_with_namespace === repo.path_with_namespace
+
+                return (
+                    <button
+                        key={repo.id || repo.uuid}
+                        onClick={() => onSelect(repo)}
+                        className={cn(
+                            "flex w-full items-center justify-between p-3 text-left text-sm transition-colors hover:bg-muted",
+                            isSelected && "bg-primary/5",
                         )}
-                    </div>
-                    {selectedRepo?.id === repo.id && (
-                        <CheckCircle2 className="ml-2 h-4 w-4 shrink-0 text-primary" />
-                    )}
-                </button>
-            ))}
+                    >
+                        <div className="min-w-0">
+                            <span className="font-medium">{displayName}</span>
+                            {repo.description && (
+                                <p className="mt-0.5 truncate max-w-87.5 text-xs text-muted-foreground">
+                                    {repo.description}
+                                </p>
+                            )}
+                        </div>
+                        {isSelected && <CheckCircle2 className="ml-2 h-4 w-4 shrink-0 text-primary" />}
+                    </button>
+                )
+            })}
             {hasNextPage && !loading && (
                 <button
                     className="flex w-full items-center justify-center gap-2 p-3 text-sm text-primary hover:bg-muted transition-colors"
@@ -128,200 +142,219 @@ function RepoList({ repos, loading, hasNextPage, selectedRepo, onSelect, onLoadM
 interface NewProjectModalProps {
     open: boolean
     onOpenChange: (open: boolean) => void
-    openToGithubStep?: boolean
 }
 
-export function NewProjectModal({ open, onOpenChange, openToGithubStep }: NewProjectModalProps) {
+const PROVIDER_CONFIG: Record<
+    ProviderKey,
+    { label: string; description: string; emoji: string }
+> = {
+    github: { label: "GitHub", description: "Connect repo", emoji: "🐙" },
+    gitlab: { label: "GitLab", description: "Connect repo", emoji: "🦊" },
+    bitbucket: { label: "Bitbucket", description: "Connect repo", emoji: "🪣" },
+    azure: { label: "Azure DevOps", description: "Connect repo", emoji: "☁️" },
+}
+
+export function NewProjectModal({ open, onOpenChange }: NewProjectModalProps) {
     const navigate = useNavigate()
     const { createProject } = useProjectStore()
 
-    const [step, setStep] = useState<"source" | "github" | "manual">("source")
+    const [step, setStep] = useState<Step>("source")
     const [isConnecting, setIsConnecting] = useState(false)
     const [apiError, setApiError] = useState<string | null>(null)
 
-    // GitHub connection
-    const [githubConnected, setGithubConnected] = useState(false)
-    const [githubUsername, setGithubUsername] = useState("")
-    // True while the initial status check is in-flight — disables the GitHub
-    // button so the user can't start OAuth before we know they're already connected.
-    const [githubStatusLoading, setGithubStatusLoading] = useState(false)
+    const [providerStatus, setProviderStatus] = useState<Record<ProviderKey, boolean>>({
+        github: false,
+        gitlab: false,
+        bitbucket: false,
+        azure: false,
+    })
+    const [providerUsernames, setProviderUsernames] = useState<Record<ProviderKey, string>>({
+        github: "",
+        gitlab: "",
+        bitbucket: "",
+        azure: "",
+    })
+    const [checkingStatus, setCheckingStatus] = useState<Record<ProviderKey, boolean>>({
+        github: false,
+        gitlab: false,
+        bitbucket: false,
+        azure: false,
+    })
 
-    // Org/account selection — persisted in localStorage across opens
-    const [orgs, setOrgs] = useState<GitHubOrg[]>([])
-    const [orgsLoading, setOrgsLoading] = useState(false)
-    const [selectedOrg, setSelectedOrg] = useState<string | null>(readSavedOrg)
+    const [githubOrgs, setGithubOrgs] = useState<GitHubOrg[]>([])
+    const [githubOrgsLoading, setGithubOrgsLoading] = useState(false)
+    const [githubSelectedOrg, setGithubSelectedOrg] = useState<string | null>(readSavedOrg)
 
-    // Repo list
-    const [repos, setRepos] = useState<GitHubRepo[]>([])
+    const [repos, setRepos] = useState<any[]>([])
     const [reposLoading, setReposLoading] = useState(false)
     const [reposPage, setReposPage] = useState(1)
     const [reposHasNext, setReposHasNext] = useState(false)
-    const [selectedRepo, setSelectedRepo] = useState<GitHubRepo | null>(null)
+    const [selectedRepo, setSelectedRepo] = useState<any | null>(null)
     const [searchQuery, setSearchQuery] = useState("")
 
-    const form = useForm<ManualProjectFormValues>({ resolver: zodResolver(manualProjectSchema) })
+    const manualForm = useForm<ManualProjectFormValues>({
+        resolver: zodResolver(manualProjectSchema),
+    })
+    const fromScratchForm = useForm<FromScratchFormValues>({
+        resolver: zodResolver(fromScratchSchema),
+    })
 
-    // Check GitHub connection every time the modal opens.
-    // If already connected, jump straight to the repo picker so the user
-    // never has to click through a redundant "Connect GitHub" step.
+    const [zipFile, setZipFile] = useState<File | null>(null)
+    const [zipValidating, setZipValidating] = useState(false)
+    const [zipError, setZipError] = useState<string | null>(null)
+
     useEffect(() => {
         if (!open) return
-        setGithubStatusLoading(true)
-        githubApi.getStatus().then((s) => {
-            setGithubConnected(s.connected)
-            if (s.githubUsername) setGithubUsername(s.githubUsername)
-            // Always auto-advance when connected — not just after an OAuth callback.
-            if (s.connected) setStep("github")
-        }).catch(() => {
-            setGithubConnected(false)
-        }).finally(() => {
-            setGithubStatusLoading(false)
-        })
+
+        const checkAllProviders = async () => {
+            const providers: ProviderKey[] = ["github", "gitlab", "bitbucket", "azure"]
+
+            for (const provider of providers) {
+                setCheckingStatus((prev) => ({ ...prev, [provider]: true }))
+                try {
+                    let status: any
+                    let username = ""
+                    if (provider === "github") {
+                        const s = await githubApi.getStatus()
+                        status = s
+                        username = s.githubUsername || ""
+                    } else if (provider === "gitlab") {
+                        const s = await gitlabApi.getStatus()
+                        status = s
+                        username = s.gitlabUsername || ""
+                    } else if (provider === "bitbucket") {
+                        const s = await bitbucketApi.getStatus()
+                        status = s
+                        username = s.bitbucketUsername || ""
+                    } else if (provider === "azure") {
+                        const s = await azureApi.getStatus()
+                        status = s
+                        username = s.azureUsername || ""
+                    }
+
+                    if (status) {
+                        setProviderStatus((prev) => ({ ...prev, [provider]: status.connected }))
+                        setProviderUsernames((prev) => ({ ...prev, [provider]: username }))
+                    }
+                } catch (err) {
+                    setProviderStatus((prev) => ({ ...prev, [provider]: false }))
+                } finally {
+                    setCheckingStatus((prev) => ({ ...prev, [provider]: false }))
+                }
+            }
+        }
+
+        checkAllProviders()
     }, [open])
 
-    // Load orgs + first page of repos when entering the github step
-    useEffect(() => {
-        if (step !== "github" || !githubConnected) return
-        loadOrgs()
-        loadRepos(1, selectedOrg)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [step, githubConnected])
-
-    // ── Loaders ──────────────────────────────────────────────
-
-    const loadOrgs = async () => {
-        setOrgsLoading(true)
-        try {
-            const data = await githubApi.getOrgs()
-            setOrgs(data.orgs)
-        } catch {
-            setOrgs([])
-        } finally {
-            setOrgsLoading(false)
-        }
-    }
-
-    const loadRepos = async (page: number, org: string | null) => {
+    const loadProviderRepos = async (provider: ProviderKey, page: number, org?: string | null) => {
         setReposLoading(true)
         setApiError(null)
         try {
-            const data = await githubApi.getRepos({ page, perPage: 30, sort: "updated", org: org ?? undefined })
-            // Normalise camelCase backend fields → snake_case shape the component expects
-            const mapped = data.repos.map((r: any) => ({
-                ...r,
-                full_name: r.fullName ?? r.full_name,
-                html_url: r.url ?? r.html_url,
-            }))
-            setRepos((prev) => (page === 1 ? mapped : [...prev, ...mapped]))
-            setReposPage(page)
-            setReposHasNext(data.hasNextPage)
-        } catch {
-            setApiError("Failed to load repositories.")
+            let data
+            if (provider === "github") {
+                data = await githubApi.getRepos({ page, perPage: 30, sort: "updated", org: org ?? undefined })
+            } else if (provider === "gitlab") {
+                data = await gitlabApi.getRepos({ page, perPage: 30 })
+            } else if (provider === "bitbucket") {
+                data = await bitbucketApi.getRepos({ page, perPage: 30 })
+            } else {
+                data = await azureApi.getRepos({ page, perPage: 30 })
+            }
+
+            if (data) {
+                const mapped = data.repos.map((r: any) => ({
+                    ...r,
+                    full_name: r.full_name || r.path_with_namespace || r.full_slug || r.name,
+                    html_url: r.html_url || r.web_url || r.links?.html?.href || r.webUrl || "",
+                }))
+                setRepos((prev) => (page === 1 ? mapped : [...prev, ...mapped]))
+                setReposPage(page)
+                setReposHasNext(data.hasNextPage)
+            }
+        } catch (err) {
+            setApiError(`Failed to load ${provider} repositories.`)
         } finally {
             setReposLoading(false)
         }
     }
 
-    // ── Org change — clears repo state and reloads for new scope ─
-
-    const handleOrgChange = (org: string | null) => {
-        setSelectedOrg(org)
-        saveOrg(org)
-        setRepos([])
-        setSelectedRepo(null)
-        setSearchQuery("")
-        setReposPage(1)
-        loadRepos(1, org)
+    const loadGithubOrgs = async () => {
+        setGithubOrgsLoading(true)
+        try {
+            const data = await githubApi.getOrgs()
+            setGithubOrgs(data.orgs)
+        } catch {
+            setGithubOrgs([])
+        } finally {
+            setGithubOrgsLoading(false)
+        }
     }
 
-    // ── Modal lifecycle ───────────────────────────────────────
-
-    const handleClose = () => {
-        onOpenChange(false)
-        // Defer reset so the exit animation isn't interrupted.
-        // selectedOrg is intentionally NOT reset — it persists across opens.
-        setTimeout(() => {
-            setStep("source")
-            form.reset()
-            setSearchQuery("")
-            setSelectedRepo(null)
-            setRepos([])
-            setReposPage(1)
-            setApiError(null)
-        }, 200)
+    const handleEnterProvider = async (provider: ProviderKey) => {
+        if (!providerStatus[provider]) {
+            await handleConnectProvider(provider)
+        } else {
+            if (provider === "github") {
+                await loadGithubOrgs()
+                await loadProviderRepos(provider, 1, githubSelectedOrg)
+            } else {
+                await loadProviderRepos(provider, 1)
+            }
+            setStep(provider)
+        }
     }
 
-    // ── Submit handlers ───────────────────────────────────────
-
-    const handleConnectGithub = async () => {
-        if (githubConnected) { setStep("github"); return }
+    const handleConnectProvider = async (provider: ProviderKey) => {
         setIsConnecting(true)
         setApiError(null)
 
-        // CRITICAL: open the popup IMMEDIATELY — before any await.
-        // Browsers only allow window.open() inside a synchronous user-gesture.
-        // On Vercel the API round-trip adds enough latency to expire the gesture,
-        // silently blocking the popup and forcing main-tab navigation instead.
-        const width = 620, height = 720
+        const width = 620,
+            height = 720
         const left = Math.round(window.screenX + (window.outerWidth - width) / 2)
-        const top  = Math.round(window.screenY + (window.outerHeight - height) / 2)
-        // Use a unique name so we never accidentally reuse a stale cross-origin
-        // popup whose location we can no longer set (SecurityError).
-        const popupName = `github-oauth-${Date.now()}`
+        const top = Math.round(window.screenY + (window.outerHeight - height) / 2)
+        const popupName = `${provider}-oauth-${Date.now()}`
+
         const popup = window.open(
-            "",          // blank — navigated below once we have the URL
+            "",
             popupName,
             `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`,
         )
 
         let data: { url: string } | null = null
         try {
-            data = await githubApi.getOAuthStartUrl()
+            if (provider === "github") data = await githubApi.getOAuthStartUrl()
+            else if (provider === "gitlab") data = await gitlabApi.getOAuthStartUrl()
+            else if (provider === "bitbucket") data = await bitbucketApi.getOAuthStartUrl()
+            else data = await azureApi.getOAuthStartUrl()
         } catch (err: any) {
             if (popup && !popup.closed) popup.close()
-            setApiError(err instanceof ApiException ? err.message : "Failed to start GitHub OAuth.")
+            setApiError(
+                err instanceof ApiException ? err.message : `Failed to start ${provider} OAuth.`,
+            )
             setIsConnecting(false)
             return
         }
 
-        // Clear any stale result from a previous OAuth attempt.
-        localStorage.removeItem("__docnine_github_oauth_result")
-
         if (!popup || popup.closed) {
-            // Popup was blocked — fall back to full-page navigation.
-            // github-oauth-complete.tsx writes localStorage then redirects to /projects.
-            window.location.href = data.url
+            window.location.href = data?.url || ""
             return
         }
 
-        // Navigate the already-open popup to the GitHub OAuth URL.
         try {
-            popup.location.href = data.url
+            popup.location.href = data?.url || ""
         } catch {
-            // SecurityError: popup already navigated cross-origin somehow.
-            // Fall back to main-tab navigation.
             popup.close()
-            window.location.href = data.url
+            window.location.href = data?.url || ""
             return
         }
 
         let settled = false
-
         const cleanup = (poll: ReturnType<typeof setInterval>) => {
             clearInterval(poll)
             clearTimeout(maxWaitTimer)
             window.removeEventListener("message", onMessage)
-            localStorage.removeItem("__docnine_github_oauth_result")
-        }
-
-        const applyConnected = (s: { connected: boolean; githubUsername?: string }) => {
-            if (s.connected) {
-                setGithubConnected(true)
-                if (s.githubUsername) setGithubUsername(s.githubUsername)
-                setStep("github")
-            } else {
-                setApiError("GitHub connected but status could not be confirmed. Please try again.")
-            }
+            localStorage.removeItem(`__docnine_${provider}_oauth_result`)
         }
 
         const finish = (status: string, user?: string | null, msg?: string | null) => {
@@ -331,105 +364,193 @@ export function NewProjectModal({ open, onOpenChange, openToGithubStep }: NewPro
             setIsConnecting(false)
 
             if (status === "connected") {
-                githubApi.getStatus().then(applyConnected).catch(() => setApiError("Failed to verify GitHub connection."))
+                handleEnterProvider(provider)
             } else if (status === "error") {
-                setApiError(msg ?? "GitHub connection failed. Please try again.")
+                setApiError(msg ?? `${provider} connection failed. Please try again.`)
             }
-            // "cancelled" or unknown → just stop the loading spinner
         }
 
-        // Fast path: postMessage when opener is still reachable.
         const onMessage = (event: MessageEvent) => {
             if (event.origin !== window.location.origin) return
-            if (event.data?.type !== "github-oauth-complete") return
+            if (event.data?.type !== `${provider}-oauth-complete`) return
             finish(event.data.status, event.data.user, event.data.msg)
         }
         window.addEventListener("message", onMessage)
 
-        // Safety net: if nothing resolves within 5 minutes, give up.
         const maxWaitTimer = setTimeout(() => {
             if (!settled) finish("cancelled")
         }, 5 * 60 * 1000)
 
-        // Primary reliable path: poll localStorage (survives COOP-severed opener
-        // and Chrome 88+ clearing window.name on cross-origin navigation).
         const poll = setInterval(() => {
-            // 1. Check if github-oauth-complete.tsx wrote a result.
-            const raw = localStorage.getItem("__docnine_github_oauth_result")
+            const raw = localStorage.getItem(`__docnine_${provider}_oauth_result`)
             if (raw) {
                 try {
                     const { status, user, msg } = JSON.parse(raw)
                     finish(status, user, msg)
                     return
-                } catch { /* malformed — ignore */ }
+                } catch {
+                    /* malformed */
+                }
             }
 
-            if (!popup.closed) return  // still open, keep waiting
+            if (!popup.closed) return
 
-            // Popup closed without a localStorage result.
-            // This can happen when:
-            //  - FRONTEND_URL env var is wrong → popup loaded an error page
-            //  - The SPA failed to initialise in the popup
-            //  - User closed the popup before OAuth completed
-            // In all cases, ask the server directly — if the token WAS saved
-            // (e.g. server processed the code but SPA crashed before writing
-            // localStorage), we still want to advance the UI.
             if (settled) return
             settled = true
             cleanup(poll)
             setIsConnecting(false)
-            githubApi.getStatus().then((s) => {
-                if (s.connected) {
-                    applyConnected(s)
-                }
-                // else: user cancelled or error — silently stop the spinner
-            }).catch(() => { /* network error — just stop */ })
+            const statusCheck =
+                provider === "github"
+                    ? githubApi.getStatus()
+                    : provider === "gitlab"
+                        ? gitlabApi.getStatus()
+                        : provider === "bitbucket"
+                            ? bitbucketApi.getStatus()
+                            : azureApi.getStatus()
+
+            statusCheck
+                .then((s) => {
+                    if (s.connected) {
+                        setProviderStatus((prev) => ({ ...prev, [provider]: true }))
+                        handleEnterProvider(provider)
+                    }
+                })
+                .catch(() => {
+                    /* network error */
+                })
         }, 300)
+    }
+
+    const handleGithubOrgChange = (org: string | null) => {
+        setGithubSelectedOrg(org)
+        saveOrg(org)
+        setRepos([])
+        setSelectedRepo(null)
+        setSearchQuery("")
+        setReposPage(1)
+        loadProviderRepos("github", 1, org)
     }
 
     const onSubmitManual = async (values: ManualProjectFormValues) => {
         setApiError(null)
+        setIsConnecting(true)
         try {
             const result = await createProject(values.repoUrl)
             handleClose()
             navigate(`/projects/${result.id}/live`)
         } catch (err: any) {
-            setApiError(err instanceof ApiException
-                ? (err.code === "DUPLICATE_PROJECT" ? "A pipeline is already running for this repository." : err.message)
-                : "Failed to create project. Is the server running?")
-        }
-    }
-
-    const onSubmitGithub = async () => {
-        if (!selectedRepo) return
-        setIsConnecting(true)
-        setApiError(null)
-        try {
-            const result = await createProject(selectedRepo.html_url)
-            handleClose()
-            navigate(`/projects/${result.id}/live`)
-        } catch (err: any) {
-            setApiError(err instanceof ApiException
-                ? (err.code === "DUPLICATE_PROJECT" ? "A pipeline is already running for this repository." : err.message)
-                : "Failed to create project.")
+            setApiError(
+                err instanceof ApiException
+                    ? err.code === "DUPLICATE_PROJECT"
+                        ? "A pipeline is already running for this repository."
+                        : err.message
+                    : "Failed to create project. Is the server running?",
+            )
         } finally {
             setIsConnecting(false)
         }
     }
 
-    // ── Derived state ─────────────────────────────────────────
+    const onSubmitProvider = async (provider: ProviderKey) => {
+        if (!selectedRepo) return
+        setApiError(null)
+        setIsConnecting(true)
+        try {
+            const repoUrl =
+                selectedRepo.html_url || selectedRepo.web_url || selectedRepo.links?.html?.href || selectedRepo.webUrl
+            const result = await createProject(repoUrl)
+            handleClose()
+            navigate(`/projects/${result.id}/live`)
+        } catch (err: any) {
+            setApiError(
+                err instanceof ApiException
+                    ? err.code === "DUPLICATE_PROJECT"
+                        ? "A pipeline is already running for this repository."
+                        : err.message
+                    : "Failed to create project.",
+            )
+        } finally {
+            setIsConnecting(false)
+        }
+    }
+
+    const onSubmitZip = async () => {
+        if (!zipFile) return
+        setApiError(null)
+        setIsConnecting(true)
+        try {
+            const result = await projectsApi.uploadZip(zipFile)
+            handleClose()
+            navigate(`/projects/${result.project._id}/live`)
+        } catch (err: any) {
+            setApiError(
+                err instanceof ApiException ? err.message : "Failed to upload ZIP. Is the server running?",
+            )
+        } finally {
+            setIsConnecting(false)
+        }
+    }
+
+    const onSubmitFromScratch = async (values: FromScratchFormValues) => {
+        setApiError("From Scratch projects coming soon!")
+    }
+
+    const handleZipFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        if (!file.name.endsWith(".zip")) {
+            setZipError("Please select a .zip file")
+            return
+        }
+
+        if (file.size > 100 * 1024 * 1024) {
+            setZipError("ZIP file must be smaller than 100MB")
+            return
+        }
+
+        setZipFile(file)
+        setZipError(null)
+
+        setZipValidating(true)
+        try {
+            const result = await projectsApi.validateZip(file)
+            if (!result.valid) {
+                setZipError(result.message || "ZIP file validation failed")
+                setZipFile(null)
+            }
+        } catch (err) {
+            setZipError("Failed to validate ZIP file")
+            setZipFile(null)
+        } finally {
+            setZipValidating(false)
+        }
+    }
+
+    const handleClose = () => {
+        onOpenChange(false)
+        setTimeout(() => {
+            setStep("source")
+            manualForm.reset()
+            fromScratchForm.reset()
+            setSearchQuery("")
+            setSelectedRepo(null)
+            setRepos([])
+            setReposPage(1)
+            setApiError(null)
+            setZipFile(null)
+            setZipError(null)
+        }, 200)
+    }
 
     const filteredRepos = repos.filter((r) =>
-        r.full_name?.toLowerCase().includes(searchQuery.toLowerCase()),
+        (r.full_name || r.path_with_namespace || r.full_slug || r.name)
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase()),
     )
 
-    const githubStepDescription = selectedOrg
-        ? `Repositories in @${selectedOrg}`
-        : githubUsername
-            ? `Repositories from @${githubUsername}`
-            : "Select a repository from your GitHub account."
-
-    // ── Render ────────────────────────────────────────────────
+    const currentProvider = step as ProviderKey
+    const currentProviderConfig = PROVIDER_CONFIG[currentProvider]
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
@@ -437,13 +558,22 @@ export function NewProjectModal({ open, onOpenChange, openToGithubStep }: NewPro
                 <DialogHeader>
                     <DialogTitle>
                         {step === "source" && "Create New Project"}
-                        {step === "github" && "Select Repository"}
                         {step === "manual" && "Enter Repository URL"}
+                        {step === "zip" && "Upload Project ZIP"}
+                        {step === "from-scratch" && "Create From Scratch"}
+                        {step === "github" && "Select GitHub Repository"}
+                        {step === "gitlab" && "Select GitLab Repository"}
+                        {step === "bitbucket" && "Select Bitbucket Repository"}
+                        {step === "azure" && "Select Azure Repository"}
                     </DialogTitle>
                     <DialogDescription>
-                        {step === "source" && "Choose how you want to import your codebase."}
-                        {step === "github" && githubStepDescription}
-                        {step === "manual" && "Enter a GitHub repository URL or owner/repo shorthand."}
+                        {step === "source" && "How would you like to add your project?"}
+                        {step === "manual" &&
+                            "Enter a repository URL for GitHub, GitLab, Bitbucket, or Azure DevOps."}
+                        {step === "zip" && "Upload a ZIP file containing your project source code."}
+                        {step === "from-scratch" && "Create a new empty project to set up manually."}
+                        {(step === "github" || step === "gitlab" || step === "bitbucket" || step === "azure") &&
+                            `Select a repository from your ${currentProviderConfig?.label} account.`}
                     </DialogDescription>
                 </DialogHeader>
 
@@ -456,110 +586,259 @@ export function NewProjectModal({ open, onOpenChange, openToGithubStep }: NewPro
 
                 {step === "source" && (
                     <div className="grid gap-4 py-4">
-                        <button
-                            onClick={handleConnectGithub}
-                            disabled={isConnecting || githubStatusLoading}
-                            className="flex items-center gap-4 rounded-lg border border-border p-4 text-left transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
-                        >
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                                {(isConnecting || githubStatusLoading) ? <Loader1 className="h-5 w-5" /> : <Github className="h-5 w-5" />}
-                            </div>
-                            <div>
-                                <div className="flex items-center gap-2">
-                                    <h4 className="font-medium">{githubConnected ? "Select from GitHub" : "Connect GitHub"}</h4>
-                                    {githubConnected && <CheckCircle2 className="h-4 w-4 text-green-500" />}
-                                </div>
-                                <p className="text-sm text-muted-foreground">
-                                    {githubStatusLoading
-                                        ? "Checking connection…"
-                                        : githubConnected
-                                            ? `Connected as @${githubUsername}. Browse your repositories.`
-                                            : "Import repositories directly from your account."}
-                                </p>
-                            </div>
-                        </button>
+                        <div className="grid grid-cols-3 gap-3">
+                            {(["github", "gitlab", "bitbucket"] as const).map((provider) => {
+                                const config = PROVIDER_CONFIG[provider]
+                                const checking = checkingStatus[provider]
+                                return (
+                                    <button
+                                        key={provider}
+                                        onClick={() => handleEnterProvider(provider)}
+                                        disabled={checking || isConnecting}
+                                        className="flex flex-col items-center justify-center gap-2 rounded-lg border border-border p-4 text-center transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
+                                    >
+                                        <div className="text-2xl">{config.emoji}</div>
+                                        <div className="font-medium text-sm">{config.label}</div>
+                                        <div className="text-xs text-muted-foreground">{config.description}</div>
+                                        {providerStatus[provider] && (
+                                            <CheckCircle2 className="h-4 w-4 text-green-500 mt-1" />
+                                        )}
+                                    </button>
+                                )
+                            })}
+                        </div>
+
+                        <div className="grid grid-cols-3 gap-3">
+                            <button
+                                onClick={() => handleEnterProvider("azure")}
+                                disabled={checkingStatus.azure || isConnecting}
+                                className="flex flex-col items-center justify-center gap-2 rounded-lg border border-border p-4 text-center transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-60 disabled:cursor-not-allowed"
+                            >
+                                <div className="text-2xl">☁️</div>
+                                <div className="font-medium text-sm">Azure DevOps</div>
+                                <div className="text-xs text-muted-foreground">Connect repo</div>
+                                {providerStatus.azure && (
+                                    <CheckCircle2 className="h-4 w-4 text-green-500 mt-1" />
+                                )}
+                            </button>
+
+                            <button
+                                onClick={() => setStep("zip")}
+                                className="flex flex-col items-center justify-center gap-2 rounded-lg border border-border p-4 text-center transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary"
+                            >
+                                <Upload className="h-6 w-6" />
+                                <div className="font-medium text-sm">Upload ZIP</div>
+                                <div className="text-xs text-muted-foreground">Upload folder</div>
+                            </button>
+
+                            <button
+                                onClick={() => setStep("from-scratch")}
+                                className="flex flex-col items-center justify-center gap-2 rounded-lg border border-border p-4 text-center transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary"
+                            >
+                                <Plus className="h-6 w-6" />
+                                <div className="font-medium text-sm">From Scratch</div>
+                                <div className="text-xs text-muted-foreground">Write manually</div>
+                            </button>
+                        </div>
+
                         <button
                             onClick={() => setStep("manual")}
-                            className="flex items-center gap-4 rounded-lg border border-border p-4 text-left transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary"
+                            className="w-full flex items-center gap-2 rounded-lg border border-border/50 p-3 text-left text-sm transition-colors hover:bg-muted/50 text-muted-foreground hover:text-foreground"
                         >
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                                <LinkIcon className="h-5 w-5" />
-                            </div>
-                            <div>
-                                <h4 className="font-medium">Manual Entry</h4>
-                                <p className="text-sm text-muted-foreground">Provide a public GitHub repository URL.</p>
-                            </div>
+                            <LinkIcon className="h-4 w-4" />
+                            Or paste a repository URL manually
                         </button>
                     </div>
                 )}
 
                 {step === "manual" && (
-                    <form onSubmit={form.handleSubmit(onSubmitManual)}>
+                    <form onSubmit={manualForm.handleSubmit(onSubmitManual)}>
                         <div className="grid gap-4 py-4">
                             <div className="space-y-2">
-                                <Label htmlFor="repoUrl">GitHub Repository URL</Label>
-                                <Input id="repoUrl" placeholder="https://github.com/owner/repo" {...form.register("repoUrl")} />
-                                {form.formState.errors.repoUrl && (
-                                    <p className="text-sm text-destructive">{form.formState.errors.repoUrl.message}</p>
+                                <Label htmlFor="repoUrl">Repository URL</Label>
+                                <Input
+                                    id="repoUrl"
+                                    placeholder="https://github.com/owner/repo"
+                                    {...manualForm.register("repoUrl")}
+                                />
+                                {manualForm.formState.errors.repoUrl && (
+                                    <p className="text-sm text-destructive">
+                                        {manualForm.formState.errors.repoUrl.message}
+                                    </p>
                                 )}
                                 <p className="text-xs text-muted-foreground">
-                                    e.g. <code>https://github.com/vercel/next.js</code> or <code>vercel/next.js</code>
+                                    Supports GitHub, GitLab, Bitbucket, or Azure DevOps
                                 </p>
                             </div>
                         </div>
                         <DialogFooter className="mt-4">
-                            <Button type="button" variant="ghost" onClick={() => setStep("source")}>Back</Button>
-                            <Button type="submit" disabled={form.formState.isSubmitting}>
-                                {form.formState.isSubmitting && <Loader1 className="mr-2 h-4 w-4" />}
+                            <Button type="button" variant="ghost" onClick={() => setStep("source")}>
+                                Back
+                            </Button>
+                            <Button type="submit" disabled={manualForm.formState.isSubmitting}>
+                                {manualForm.formState.isSubmitting && (
+                                    <Loader1 className="mr-2 h-4 w-4" />
+                                )}
                                 Create Project
                             </Button>
                         </DialogFooter>
                     </form>
                 )}
 
-                {step === "github" && (
+                {step === "zip" && (
                     <div className="grid gap-4 py-4">
-                        {/* Account / org switcher */}
-                        <OrgAccountPicker
-                            username={githubUsername}
-                            orgs={orgs}
-                            orgsLoading={orgsLoading}
-                            selected={selectedOrg}
-                            onSelect={handleOrgChange}
-                        />
-
-                        {/* Repo search */}
-                        <div className="relative">
-                            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="Search repositories…"
-                                className="pl-9"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
+                        <div className="space-y-2">
+                            <Label htmlFor="zipFile">Project ZIP File</Label>
+                            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+                                <input
+                                    id="zipFile"
+                                    type="file"
+                                    accept=".zip"
+                                    onChange={handleZipFileChange}
+                                    className="hidden"
+                                />
+                                {zipFile ? (
+                                    <div className="space-y-2">
+                                        <CheckCircle2 className="h-8 w-8 text-green-500 mx-auto" />
+                                        <p className="font-medium text-sm">{zipFile.name}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {(zipFile.size / 1024 / 1024).toFixed(2)} MB
+                                        </p>
+                                        <button
+                                            type="button"
+                                            onClick={() => setZipFile(null)}
+                                            className="text-xs text-primary hover:underline mt-2"
+                                        >
+                                            Choose different file
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <>
+                                        <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                                        <p className="text-sm font-medium">Drag and drop your ZIP here</p>
+                                        <p className="text-xs text-muted-foreground">or</p>
+                                        <button
+                                            type="button"
+                                            onClick={() =>
+                                                document.getElementById("zipFile")?.click()
+                                            }
+                                            className="text-sm text-primary hover:underline"
+                                        >
+                                            browse files
+                                        </button>
+                                        <p className="text-xs text-muted-foreground mt-2">
+                                            Max 100 MB
+                                        </p>
+                                    </>
+                                )}
+                            </div>
+                            {zipError && (
+                                <p className="text-sm text-destructive flex items-center gap-2">
+                                    <AlertCircle className="h-4 w-4" />
+                                    {zipError}
+                                </p>
+                            )}
                         </div>
-
-                        {/* Repo list */}
-                        <div className="max-h-62.5 overflow-y-auto rounded-md border border-border">
-                            <RepoList
-                                repos={filteredRepos}
-                                loading={reposLoading}
-                                hasNextPage={reposHasNext}
-                                selectedRepo={selectedRepo}
-                                onSelect={setSelectedRepo}
-                                onLoadMore={() => loadRepos(reposPage + 1, selectedOrg)}
-                            />
-                        </div>
-
                         <DialogFooter className="mt-4">
-                            <Button type="button" variant="ghost" onClick={() => setStep("source")}>Back</Button>
-                            <Button onClick={onSubmitGithub} disabled={!selectedRepo || isConnecting}>
+                            <Button type="button" variant="ghost" onClick={() => setStep("source")}>
+                                Back
+                            </Button>
+                            <Button onClick={onSubmitZip} disabled={!zipFile || isConnecting || zipValidating}>
                                 {isConnecting && <Loader1 className="mr-2 h-4 w-4" />}
-                                Import Repository
+                                {zipValidating && <Loader1 className="mr-2 h-4 w-4" />}
+                                Upload & Create Project
                             </Button>
                         </DialogFooter>
                     </div>
                 )}
+
+                {step === "from-scratch" && (
+                    <form onSubmit={fromScratchForm.handleSubmit(onSubmitFromScratch)}>
+                        <div className="grid gap-4 py-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="projectName">Project Name</Label>
+                                <Input
+                                    id="projectName"
+                                    placeholder="My Project"
+                                    {...fromScratchForm.register("projectName")}
+                                />
+                                {fromScratchForm.formState.errors.projectName && (
+                                    <p className="text-sm text-destructive">
+                                        {fromScratchForm.formState.errors.projectName.message}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                        <DialogFooter className="mt-4">
+                            <Button type="button" variant="ghost" onClick={() => setStep("source")}>
+                                Back
+                            </Button>
+                            <Button
+                                type="submit"
+                                disabled={fromScratchForm.formState.isSubmitting}
+                            >
+                                Create Project
+                            </Button>
+                        </DialogFooter>
+                    </form>
+                )}
+
+                {(step === "github" ||
+                    step === "gitlab" ||
+                    step === "bitbucket" ||
+                    step === "azure") && (
+                        <div className="grid gap-4 py-4">
+                            {step === "github" && (
+                                <OrgAccountPicker
+                                    username={providerUsernames.github}
+                                    orgs={githubOrgs}
+                                    orgsLoading={githubOrgsLoading}
+                                    selected={githubSelectedOrg}
+                                    onSelect={handleGithubOrgChange}
+                                />
+                            )}
+
+                            <div className="relative">
+                                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                                <Input
+                                    placeholder="Search repositories…"
+                                    className="pl-9"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                />
+                            </div>
+
+                            <div className="max-h-62.5 overflow-y-auto rounded-md border border-border">
+                                <RepoList
+                                    repos={filteredRepos}
+                                    loading={reposLoading}
+                                    hasNextPage={reposHasNext}
+                                    selectedRepo={selectedRepo}
+                                    onSelect={setSelectedRepo}
+                                    onLoadMore={() =>
+                                        loadProviderRepos(
+                                            currentProvider,
+                                            reposPage + 1,
+                                            step === "github" ? githubSelectedOrg : undefined,
+                                        )
+                                    }
+                                />
+                            </div>
+
+                            <DialogFooter className="mt-4">
+                                <Button type="button" variant="ghost" onClick={() => setStep("source")}>
+                                    Back
+                                </Button>
+                                <Button
+                                    onClick={() => onSubmitProvider(currentProvider)}
+                                    disabled={!selectedRepo || isConnecting}
+                                >
+                                    {isConnecting && <Loader1 className="mr-2 h-4 w-4" />}
+                                    Import Repository
+                                </Button>
+                            </DialogFooter>
+                        </div>
+                    )}
             </DialogContent>
         </Dialog>
     )

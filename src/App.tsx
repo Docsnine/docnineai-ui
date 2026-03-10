@@ -26,6 +26,9 @@ const AuthCallbackPage = lazy(() => import("@/pages/auth/callback").then(m => ({
 const CliAuthPage = lazy(() => import("@/pages/auth/cli-auth").then(m => ({ default: m.CliAuthPage })))
 const AcceptInvitePage = lazy(() => import("@/pages/auth/accept-invite").then(m => ({ default: m.AcceptInvitePage })))
 const GithubOAuthCompletePage = lazy(() => import("@/components/projects/github-oauth-complete").then(m => ({ default: m.GithubOAuthCompletePage })))
+const GitlabOAuthCompletePage = lazy(() => import("@/components/projects/gitlab-oauth-complete").then(m => ({ default: m.GitlabOAuthCompletePage })))
+const BitbucketOAuthCompletePage = lazy(() => import("@/components/projects/bitbucket-oauth-complete").then(m => ({ default: m.BitbucketOAuthCompletePage })))
+const AzureOAuthCompletePage = lazy(() => import("@/components/projects/azure-oauth-complete").then(m => ({ default: m.AzureOAuthCompletePage })))
 
 const DashboardLayout = lazy(() => import("@/components/layout/dashboard-layout").then(m => ({ default: m.DashboardLayout })))
 const DashboardPage = lazy(() => import("@/pages/dashboard").then(m => ({ default: m.DashboardPage })))
@@ -137,7 +140,8 @@ function getRouteSeo(pathname: string): SeoConfig | null {
   // System / oauth pages — no indexing
   const SYSTEM_PATHS = [
     "/verify", "/auth/callback", "/cli-auth",
-    "/github/oauth/complete", "/forgot-password", "/reset-password",
+    "/github/oauth/complete", "/gitlab/oauth/complete", "/bitbucket/oauth/complete", "/azure/oauth/complete",
+    "/forgot-password", "/reset-password",
   ]
   if (
     SYSTEM_PATHS.includes(pathname) ||
@@ -321,7 +325,8 @@ function AppRoutes() {
   const { initAuth, initialized } = useAuthStore()
 
   useEffect(() => {
-    if (window.location.pathname === "/github/oauth/complete") {
+    const oauthPaths = ["/github/oauth/complete", "/gitlab/oauth/complete", "/bitbucket/oauth/complete", "/azure/oauth/complete"]
+    if (oauthPaths.includes(window.location.pathname)) {
       useAuthStore.setState({ initialized: true })
       return
     }
@@ -357,6 +362,9 @@ function AppRoutes() {
         <Route path="/cli-auth" element={<CliAuthPage />} />
         <Route path="/share/accept/:token" element={<AcceptInvitePage />} />
         <Route path="/github/oauth/complete" element={<GithubOAuthCompletePage />} />
+        <Route path="/gitlab/oauth/complete" element={<GitlabOAuthCompletePage />} />
+        <Route path="/bitbucket/oauth/complete" element={<BitbucketOAuthCompletePage />} />
+        <Route path="/azure/oauth/complete" element={<AzureOAuthCompletePage />} />
 
         {/* ── Protected workspace ───────────────────────────────── */}
         <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
