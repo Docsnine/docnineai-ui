@@ -160,7 +160,7 @@ function getRouteSeo(pathname: string): SeoConfig | null {
     "/": {
       title: "Docnine -  AI Documentation for Engineering Teams",
       description:
-        "Create and maintain developer documentation with AI. Docnine generates docs from your codebase, then keeps them up to date as your code evolves.",
+        "Ship better documentations, faster. Stop writing documentation by hand. Create and maintain developer documentation with AI. Docnine generates docs from your codebase, then keeps them up to date as your code evolves.",
       pathname: "/",
       keywords: MARKETING_KEYWORDS,
       appendSiteName: false,
