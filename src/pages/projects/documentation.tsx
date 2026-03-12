@@ -1000,7 +1000,7 @@ export function DocumentationViewerPage() {
           {isOwner && (
             <Button variant="outline" size="sm" onClick={() => setCreateTabModalOpen(true)}>
               <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline ml-1.5">Add Tab</span>
+              <span className="hidden sm:inline ml-1.5">Contents</span>
             </Button>
           )}
 

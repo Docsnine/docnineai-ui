@@ -80,7 +80,7 @@ function GeneralSettingsCard() {
 
     if (isLoading) {
         return (
-            <Card>
+            <Card className="shadow-none">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <User className="h-5 w-5" />
@@ -96,7 +96,7 @@ function GeneralSettingsCard() {
     }
 
     return (
-        <Card>
+        <Card className="shadow-none">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <User className="h-5 w-5" />
@@ -964,7 +964,7 @@ function GitLabCard() {
     }
 
     return (
-        <Card>
+        <Card className="shadow-none">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <GitBranch className="h-5 w-5" />
@@ -1120,7 +1120,7 @@ function BitbucketCard() {
     }
 
     return (
-        <Card>
+        <Card className="shadow-none">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <UtensilsCrossed className="h-5 w-5" />
@@ -1276,7 +1276,7 @@ function AzureDevOpsCard() {
     }
 
     return (
-        <Card>
+        <Card className="shadow-none">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Cloud className="h-5 w-5" />
@@ -1337,6 +1337,10 @@ function AzureDevOpsCard() {
                         )}
 
                         <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3">
+                                <UtensilsCrossed className="h-5 w-5 text-muted-foreground shrink-0" />
+                                <p className="text-sm text-muted-foreground">No Azure DevOps account connected.</p>
+                            </div>
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -1363,10 +1367,7 @@ function AzureDevOpsCard() {
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        <div className="flex items-center gap-3 rounded-lg border border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-900/20 px-4 py-3">
-                            <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 shrink-0" />
-                            <p className="text-sm text-yellow-800 dark:text-yellow-300">Azure DevOps OAuth is currently being debugged. Use token-based authentication instead.</p>
-                        </div>
+
                         <Button
                             onClick={handleConnect}
                             disabled={actionLoading === "connect"}

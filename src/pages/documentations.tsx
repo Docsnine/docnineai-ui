@@ -133,7 +133,7 @@ function DocProjectCard({ project }: { project: ApiProject }) {
                         ].map(({ value, icon: Icon, label }) => (
                             <div key={label} className="bg-muted/50 rounded-lg p-2">
                                 <div className="text-lg font-bold">{value ?? 0}</div>
-                                <div className="text-[10px] text-muted-foreground flex items-center justify-center gap-0.5">
+                                <div className="text-[13px] text-muted-foreground flex items-center justify-center gap-0.5">
                                     <Icon className="h-2.5 w-2.5" />{label}
                                 </div>
                             </div>

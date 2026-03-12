@@ -43,7 +43,7 @@ export function CreateTabModal({ isOpen, onClose, onCreate, isLoading = false }:
         <Dialog open={isOpen} onOpenChange={(o) => !o && onClose()}>
             <DialogContent className="max-w-md">
                 <DialogHeader>
-                    <DialogTitle>Create Custom Tab</DialogTitle>
+                    <DialogTitle>Create Custom Contents</DialogTitle>
                     <DialogDescription>Add a new tab to this doc</DialogDescription>
                 </DialogHeader>
 
@@ -56,7 +56,7 @@ export function CreateTabModal({ isOpen, onClose, onCreate, isLoading = false }:
                     )}
 
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium">Tab Name *</label>
+                        <label className="text-sm font-medium">Name</label>
                         <Input
                             placeholder="e.g. Release Notes"
                             value={name}
