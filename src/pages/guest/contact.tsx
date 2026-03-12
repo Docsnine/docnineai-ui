@@ -30,15 +30,13 @@ export function ContactPage() {
     }
 
     return (
-        <div className="relative min-h-screen bg-background text-foreground overflow-hidden font-sans">
+        <div>
             <BackgroundGrid />
 
             <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-foreground/10 blur-[120px] pointer-events-none z-0" />
             <div className="absolute top-[40%] left-[50%] translate-x-[-50%] translate-y-[-50%] w-[40%] h-[30%] rounded-full bg-primary/10 blur-[100px] pointer-events-none z-0" />
 
-            <TopHeader />
-
-            <main className="relative z-10 pt-20 px-4">
+            <section className="relative z-10 pt-20 px-4">
                 <div className="container mx-auto max-w-5xl mb-24">
                     {/* Page heading */}
                     <div className="mb-16 text-center">
@@ -223,12 +221,7 @@ export function ContactPage() {
                         </div>
                     </div>
                 </div>
-
-                {/* CTA Section */}
-                <CTA />
-            </main>
-
-            <Footer />
+            </section>
         </div>
     )
 }

@@ -268,15 +268,13 @@ export function PlatformDocsPage() {
         : SECTIONS
 
     return (
-        <div className="relative min-h-screen bg-background text-foreground font-sans">
+        <div>
             {/* Grid clipped to top half */}
             <div className="absolute inset-x-0 top-0 h-1/12 overflow-hidden pointer-events-none">
                 <BackgroundGrid />
             </div>
 
             <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-foreground/5 blur-[120px] pointer-events-none z-0" />
-
-            <TopHeader className="sticky top-0" />
 
             {/* Mobile sidebar toggle */}
             <div className="sticky top-0 z-30 lg:hidden flex items-center gap-3 px-4 py-3 border-b border-border bg-background/90 backdrop-blur-md">
@@ -302,7 +300,7 @@ export function PlatformDocsPage() {
                         "transition-transform duration-200 lg:translate-x-0",
                         sidebarOpen ? "translate-x-0" : "-translate-x-full",
                     )}
-                    style={{ top: "64px" }}
+                    style={{ top: "0px" }}
                 >
                     {/* Search */}
                     <div className="p-4 border-b border-border">
@@ -369,7 +367,7 @@ export function PlatformDocsPage() {
                 )}
 
                 {/* ── Main content ── */}
-                <main ref={mainRef} className="flex-1 min-w-0 px-6 lg:px-12 py-12 max-w-3xl mx-auto lg:mx-0">
+                <main ref={mainRef} className="flex-1 min-w-0 px-6 lg:px-12 py-12 max-w-3xl mx-auto lg:mx-0 h-[calc(100vh-4rem)] overflow-y-auto">
                     {/* Page intro */}
                     <div className="mb-12">
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-muted/50 text-xs text-muted-foreground mb-4">
@@ -946,8 +944,6 @@ NOTION_PARENT_PAGE_ID=your_page_id_here`} />
                     <ArrowUp className="h-4 w-4" />
                 </button>
             )}
-
-            <Footer />
         </div>
     )
 }

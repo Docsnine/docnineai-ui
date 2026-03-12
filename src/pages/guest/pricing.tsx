@@ -167,7 +167,7 @@ export function PricingPage() {
     }
 
     return (
-        <div className="relative min-h-screen bg-background text-foreground overflow-hidden font-sans">
+        <div>
             <div className="absolute inset-x-0 top-0 h-1/2 overflow-hidden pointer-events-none">
                 <BackgroundGrid />
             </div>
@@ -175,10 +175,8 @@ export function PricingPage() {
             {/* Top Left Glow */}
             <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-foreground/10 blur-[120px] pointer-events-none z-0" />
 
-            <TopHeader />
-
             {/* Hero */}
-            <div className="mx-auto relative z-10 max-w-5xl px-6 pt-16 pb-12 text-center">
+            <section className="mx-auto relative z-10 max-w-5xl px-6 pt-16 pb-12 text-center">
                 <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">
                     Simple, transparent pricing
                 </h1>
@@ -216,10 +214,10 @@ export function PricingPage() {
                         </Badge>
                     </span>
                 </div>
-            </div>
+            </section>
 
             {/* Plan cards */}
-            <div className="mx-auto max-w-6xl px-6 pb-16 relative z-10">
+            <section className="mx-auto max-w-6xl px-6 pb-16 relative z-10">
                 {error && (
                     <p className="mb-6 rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400 text-center">
                         {error}
@@ -257,9 +255,7 @@ export function PricingPage() {
                         )}
                     </>
                 )}
-            </div>
-
-            <Footer />
+            </section>
         </div>
     )
 }

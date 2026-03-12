@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useTheme } from "./theme-provider";
+import { useTheme } from "../providers/theme-provider";
 
 function ApplicationLogo({ link, className }: { link?: string; className?: string }) {
     const { theme } = useTheme()

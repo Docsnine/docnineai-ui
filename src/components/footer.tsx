@@ -1,8 +1,8 @@
 import { Github, MessageSquare, Twitter } from 'lucide-react'
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { useTheme } from './theme-provider';
-import ApplicationLogo from './logo';
+import { useTheme } from '../providers/theme-provider';
+import ApplicationLogo from './application-logo';
 
 function Footer() {
     const { theme } = useTheme();

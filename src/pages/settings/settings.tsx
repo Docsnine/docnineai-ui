@@ -32,7 +32,7 @@ import {
 } from "lucide-react"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
-import { BillingTab } from "@/pages/billing"
+import { BillingTab } from "@/pages/settings/billing"
 import Loader1 from "@/components/ui/loader1"
 
 // ── Copy button ──────────────────────────────────────────────────────────────

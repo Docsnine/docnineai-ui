@@ -7,17 +7,15 @@ import BackgroundGrid from "@/components/ui/background-grid"
 import Footer from "@/components/footer"
 import CTA from "@/components/CTA"
 
-export function LandingPage() {
+export function HomePage() {
   return (
-    <div className="relative min-h-screen bg-background text-foreground overflow-hidden font-sans">
+    <div>
       <div className="absolute inset-x-0 top-0 h-1/2 overflow-hidden pointer-events-none">
         <BackgroundGrid />
       </div>
 
       {/* Top Left Glow */}
       <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-foreground/5 blur-[120px] pointer-events-none z-0" />
-
-      <TopHeader />
 
       {/* Hero Section */}
       <section className="relative z-10 flex flex-col items-center justify-center pt-24 pb-20 px-4 text-center">
@@ -161,11 +159,6 @@ export function LandingPage() {
           </div>
         </div>
       </section>
-
-      {/* CTA Section */}
-      <CTA />
-
-      <Footer />
     </div>
   )
 }
