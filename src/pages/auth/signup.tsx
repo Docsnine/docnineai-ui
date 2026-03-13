@@ -16,6 +16,9 @@ const signupSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(80, "Name must be at most 80 characters"),
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
+  agreeToTerms: z.boolean().refine((val) => val === true, {
+    message: "You must agree to the Terms of Service and Privacy Policy",
+  }),
 })
 
 type SignupFormValues = z.infer<typeof signupSchema>
@@ -125,6 +128,31 @@ export function SignupPage() {
                 <Label htmlFor="password">Password</Label>
                 <Input id="password" type="password" placeholder="********" {...register("password")} />
                 {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
+              </div>
+
+              {/* Terms & Conditions Checkbox */}
+              <div className="flex items-start space-x-2">
+                <input
+                  type="checkbox"
+                  id="agreeToTerms"
+                  className="mt-1 h-4 w-4 rounded border border-input cursor-pointer"
+                  {...register("agreeToTerms")}
+                />
+                <div className="flex flex-col space-y-1 mt-1">
+                  <label htmlFor="agreeToTerms" className="text-sm font-medium leading-none cursor-pointer">
+                    I agree to the{" "}
+                    <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      Terms of Service
+                    </a>
+                    {" "}and{" "}
+                    <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      Privacy Policy
+                    </a>
+                  </label>
+                  {errors.agreeToTerms && (
+                    <p className="text-sm text-destructive">{errors.agreeToTerms.message}</p>
+                  )}
+                </div>
               </div>
             </CardContent>
             <CardFooter className="flex flex-col space-y-4">

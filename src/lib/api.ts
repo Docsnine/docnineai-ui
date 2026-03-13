@@ -186,7 +186,12 @@ export interface AuthResponse {
 }
 
 export const authApi = {
-  signup: (body: { name: string; email: string; password: string }) =>
+  signup: (body: {
+    name: string;
+    email: string;
+    password: string;
+    agreeToTerms: boolean;
+  }) =>
     apiFetch<AuthResponse>("/auth/signup", {
       method: "POST",
       body: JSON.stringify(body),
@@ -736,11 +741,16 @@ export const projectsApi = {
     ),
 
   /** Download an export as a Blob. Caller triggers the browser download. */
-  exportBlob: async (id: string, type: "pdf" | "yaml") => {
+  exportBlob: async (id: string, type: "pdf" | "yaml", data?: any) => {
     const token = _accessToken;
     const res = await fetch(`${API_BASE}/projects/${id}/export/${type}`, {
+      method: "POST",
       credentials: "include",
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(data ? { "Content-Type": "application/json" } : {}),
+      },
+      ...(data && { body: JSON.stringify(data) }),
     });
     if (!res.ok)
       throw new ApiException(res.status, {
@@ -750,10 +760,13 @@ export const projectsApi = {
     return res.blob();
   },
 
-  exportNotion: (id: string) =>
+  exportNotion: (id: string, data?: any) =>
     apiFetch<{ mainPageUrl: string; mainPageId: string; childPages: string[] }>(
       `/projects/${id}/export/notion`,
-      { method: "POST" },
+      {
+        method: "POST",
+        ...(data && { body: JSON.stringify(data) }),
+      },
     ),
 
   /** Get Google Docs OAuth connect URL for the project owner. */
@@ -774,10 +787,13 @@ export const projectsApi = {
     apiFetch<void>(`/projects/${id}/export/google-docs`, { method: "DELETE" }),
 
   /** Export project docs to a new Google Doc. */
-  exportGoogleDocs: (id: string) =>
+  exportGoogleDocs: (id: string, data?: any) =>
     apiFetch<{ documentId: string; documentUrl: string; title: string }>(
       `/projects/${id}/export/google-docs`,
-      { method: "POST" },
+      {
+        method: "POST",
+        ...(data && { body: JSON.stringify(data) }),
+      },
     ),
 
   /** Fetch the persisted pipeline event log for a project (last 200 events). */
@@ -1365,14 +1381,14 @@ export const customTabsApi = {
     apiFetch<{ tabs: CustomTab[] }>(`/projects/${projectId}/custom-tabs`),
 
   /** Create a new custom tab. */
-  create: (projectId: string, data: { name: string; description?: string; content?: string }) =>
-    apiFetch<{ project: ApiProject }>(
-      `/projects/${projectId}/custom-tabs`,
-      {
-        method: "POST",
-        body: JSON.stringify(data),
-      },
-    ),
+  create: (
+    projectId: string,
+    data: { name: string; description?: string; content?: string },
+  ) =>
+    apiFetch<{ project: ApiProject }>(`/projects/${projectId}/custom-tabs`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 
   /** Update a custom tab (name, description, content). */
   update: (

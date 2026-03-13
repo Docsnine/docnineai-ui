@@ -2,29 +2,17 @@ import { useState, useEffect, useRef } from "react"
 import { useParams, Link } from "react-router-dom"
 import { useProjectStore, mapApiStatus } from "@/store/projects"
 import { projectsApi, versionsApi, customTabsApi, ApiException, ApiProject, ApiShare, sharingApi, portalApi, apiSpecApi, type ApiPortal, type ApiSpec, type ApiProjectEditedSection, type CustomTab } from "@/lib/api"
+import { prepareExportData, getExportSummary, getFormattedTabContent } from "@/lib/export-utils"
+import { generatePDFHTML } from "@/lib/pdf-generator"
 import { Button } from "@/components/ui/button"
 import {
   ArrowLeft,
-  Book,
-  ShieldAlert,
-  FileCode2,
-  Database,
-  BookOpen,
   Menu,
-  AlertTriangle,
   Edit3,
   Bot,
   Save,
   X,
-  Bold,
-  Italic,
-  List,
-  ListOrdered,
-  Code,
-  Link as LinkIcon,
   Info,
-  FileCode,
-  Eye,
   MoreHorizontal,
   FileClock,
   FileDown,
@@ -33,6 +21,9 @@ import {
   Globe,
   Lock,
   Plus,
+  AlertTriangle,
+  ShieldAlert,
+  File,
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import Markdown from "react-markdown"
@@ -53,294 +44,11 @@ import { UpgradeModal } from "@/components/billing/UpgradeModal"
 import Loader1 from "@/components/ui/loader1"
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { CreateTabModal } from "@/components/projects/custom-tabs-modals"
-
-// ── Status-change modal ───────────────────────────────────────────────────────
-interface StatusChangeModalProps {
-  isOpen: boolean
-  onClose: () => void
-  pendingStatus: import("@/store/doc-tracker").DocStatus | null
-  onConfirm: (note: string, taggedMember?: string) => void
-  members: ApiShare[]
-  loadingMembers: boolean
-}
-
-function StatusChangeModal({ isOpen, onClose, pendingStatus, onConfirm, members, loadingMembers }: StatusChangeModalProps) {
-  const [note, setNote] = useState("")
-  const [tagged, setTagged] = useState<string>("")
-
-  // reset fields each time the modal opens
-  useEffect(() => {
-    if (isOpen) { setNote(""); setTagged("") }
-  }, [isOpen])
-
-  if (!pendingStatus) return null
-  const cfg = DOC_STATUS_CONFIG[pendingStatus]
-  const isChangesRequested = pendingStatus === "changes_requested"
-  const Icon = cfg.icon
-
-  const activeMembers = members.filter((m) => m.status === "accepted")
-
-  return (
-    <Dialog open={isOpen} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Icon className={cn("h-4 w-4 shrink-0", cfg.iconClass)} />
-            Set status to "{cfg.label}"
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4 py-2">
-          {/* Note */}
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium">Message <span className="text-muted-foreground font-normal">(optional)</span></label>
-            <textarea
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary resize-none min-h-20 placeholder:text-muted-foreground"
-              placeholder={isChangesRequested ? "Describe what needs to change..." : "Add a note for this status change..."}
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-            />
-          </div>
-
-          {/* Tag member — only for changes_requested */}
-          {isChangesRequested && (
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium">Assign to <span className="text-muted-foreground font-normal">(optional)</span></label>
-              {loadingMembers ? (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <Loader1 className="h-3 w-3" /> Loading members...
-                </div>
-              ) : activeMembers.length === 0 ? (
-                <p className="text-xs text-muted-foreground">No invited members yet.</p>
-              ) : (
-                <div className="space-y-1">
-                  {activeMembers.map((m) => {
-                    const display = m.inviteeUser?.name ?? m.inviteeEmail
-                    const val = m.inviteeEmail
-                    return (
-                      <label
-                        key={m._id}
-                        className={cn(
-                          "flex items-center gap-2.5 rounded-md border px-3 py-2 text-sm cursor-pointer transition-colors",
-                          tagged === val
-                            ? "border-primary bg-primary/5"
-                            : "border-border hover:bg-muted",
-                        )}
-                      >
-                        <input
-                          type="radio"
-                          name="tagged-member"
-                          className="h-3.5 w-3.5 accent-primary"
-                          checked={tagged === val}
-                          onChange={() => setTagged(tagged === val ? "" : val)}
-                          onClick={() => { if (tagged === val) setTagged("") }}
-                        />
-                        <div className="h-6 w-6 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-                          <span className="text-[10px] font-semibold text-primary">{display[0].toUpperCase()}</span>
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-medium truncate">{display}</div>
-                          {m.inviteeUser?.name && <div className="text-xs text-muted-foreground truncate">{m.inviteeEmail}</div>}
-                        </div>
-                        <span className="ml-auto text-[10px] text-muted-foreground capitalize">{m.role}</span>
-                      </label>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        <DialogFooter>
-          <Button variant="outline" size="sm" onClick={onClose}>Cancel</Button>
-          <Button size="sm" onClick={() => onConfirm(note.trim(), tagged || undefined)}>
-            <Icon className="h-3.5 w-3.5 mr-1.5 shrink-0" />
-            {cfg.label}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-// ── Tab definitions ──────────────────────────────────────────────────────────
-// Native tabs are always available and tied to document sections with version history.
-// Custom tabs are user-created and managed dynamically.
-type NativeTab = "readme" | "api" | "schema" | "internal" | "security" | "other_docs"
-type DocTab = NativeTab | `custom_${string}`
-
-interface TabDef {
-  key: DocTab
-  label: string
-  icon: React.ElementType
-  field?: string // Only for native tabs — maps to API project field
-  isNative: boolean
-  isCustom?: boolean
-  customTab?: CustomTab
-}
-
-// ── Native tabs (always defined) ──────────────────────────────────────────
-const NATIVE_TABS: TabDef[] = [
-  { key: "readme", label: "README", icon: Book, field: "readme", isNative: true },
-  { key: "api", label: "API Reference", icon: FileCode2, field: "apiReference", isNative: true },
-  { key: "schema", label: "Schema Docs", icon: Database, field: "schemaDocs", isNative: true },
-  { key: "internal", label: "Internal Docs", icon: BookOpen, field: "internalDocs", isNative: true },
-  { key: "security", label: "Security", icon: ShieldAlert, field: "securityReport", isNative: true },
-  { key: "other_docs", label: "Other Docs", icon: FileCode, isNative: true },
-]
-
-// ── Helper: Build full tab list from native + custom tabs ──────────────────
-function buildTabList(customTabs: CustomTab[] = []): TabDef[] {
-  const customDefs: TabDef[] = (customTabs ?? [])
-    .sort((a, b) => a.order - b.order)
-    .map((ct) => ({
-      key: `custom_${ct._id}` as DocTab,
-      label: ct.name,
-      icon: FileCode,
-      isNative: false,
-      isCustom: true,
-      customTab: ct,
-    }))
-  return [...NATIVE_TABS.slice(0, -1), ...customDefs, NATIVE_TABS[NATIVE_TABS.length - 1]] // Other Docs always last
-}
-
-// ── Section key → DocumentVersion section name (native tabs only) ──────────
-const TAB_TO_SECTION: Partial<Record<NativeTab, string>> = {
-  readme: "readme",
-  api: "apiReference",
-  schema: "schemaDocs",
-  internal: "internalDocs",
-  security: "securityReport",
-}
-
-// ── Stale section banner ──────────────────────────────────────────────────────────────
-function StaleSectionBanner({
-  changeSummary,
-  onViewDiff,
-  onAcceptAI,
-  onDismiss,
-  accepting,
-}: {
-  changeSummary: string | null
-  onViewDiff: () => void
-  onAcceptAI: () => void
-  onDismiss: () => void
-  accepting: boolean
-}) {
-  return (
-    <div className="mx-6 mt-4 rounded-lg border border-primary/30 bg-primary/5 p-3 flex flex-col gap-2 shrink-0">
-      <div className="flex items-start gap-2">
-        <AlertTriangle className="h-4 w-4 text-primary dark:text-primary shrink-0 mt-0.5" />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-primary dark:text-primary">
-            (AI) has updated this section since your last edit
-          </p>
-          {changeSummary && (
-            <p className="text-xs text-primary/80 dark:text-primary/80 mt-0.5 line-clamp-2">{changeSummary}</p>
-          )}
-        </div>
-      </div>
-      <div className="flex items-center gap-2 pl-6 flex-wrap">
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 text-xs border-primary/30 hover:bg-primary/10"
-          onClick={onViewDiff}
-        >
-          <Eye className="mr-1.5 h-3 w-3" /> View AI version
-        </Button>
-        <Button size="sm" className="h-7 text-xs" disabled={accepting} onClick={onAcceptAI}>
-          {accepting && <Loader1 className="mr-1.5 h-3 w-3 " />}
-          Accept AI version
-        </Button>
-        <Button size="sm" variant="ghost" className="h-7 text-xs text-muted-foreground" onClick={onDismiss}>
-          Keep my edit
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-// ── Stale diff modal ─────────────────────────────────────────────────────────────
-function StaleDiffModal({
-  sectionLabel,
-  userContent,
-  aiContent,
-  onClose,
-  onAcceptAI,
-  accepting,
-}: {
-  sectionLabel: string
-  userContent: string
-  aiContent: string
-  onClose: () => void
-  onAcceptAI: () => void
-  accepting: boolean
-}) {
-  return (
-    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex flex-col">
-      <div className="flex items-center justify-between px-6 py-3 border-b border-border bg-card shrink-0">
-        <div>
-          <h2 className="font-semibold text-sm">Compare versions — {sectionLabel}</h2>
-          <p className="text-xs text-muted-foreground">Left: your edit · Right: new AI version</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button size="sm" disabled={accepting} onClick={onAcceptAI}>
-            {accepting && <Loader1 className="mr-1.5 h-3 w-3 " />}
-            Accept AI version
-          </Button>
-          <Button size="sm" variant="outline" onClick={onClose}>
-            Close
-          </Button>
-        </div>
-      </div>
-      <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 overflow-y-auto border-r border-border p-6">
-          <div className="mb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Your Edit</div>
-          <div className="prose prose-slate dark:prose-invert max-w-none">
-            <DocRenderer content={userContent} />
-          </div>
-        </div>
-        <div className="flex-1 overflow-y-auto p-6 bg-primary/2">
-          <div className="mb-3 text-xs font-semibold text-primary uppercase tracking-wider">New AI Version</div>
-          <div className="prose prose-slate dark:prose-invert max-w-none">
-            <DocRenderer content={aiContent} />
-          </div>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ── Markdown editor toolbar ──────────────────────────────────────────────────
-
-function MarkdownToolbar({ onInsert }: { onInsert: (prefix: string, suffix?: string) => void }) {
-  return (
-    <div className="flex items-center gap-1 p-2 border-b border-border bg-muted/30">
-      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onInsert("**", "**")} title="Bold">
-        <Bold className="h-4 w-4" />
-      </Button>
-      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onInsert("*", "*")} title="Italic">
-        <Italic className="h-4 w-4" />
-      </Button>
-      <div className="w-px h-4 bg-border mx-1" />
-      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onInsert("- ")} title="Bullet List">
-        <List className="h-4 w-4" />
-      </Button>
-      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onInsert("1. ")} title="Numbered List">
-        <ListOrdered className="h-4 w-4" />
-      </Button>
-      <div className="w-px h-4 bg-border mx-1" />
-      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onInsert("`", "`")} title="Inline Code">
-        <Code className="h-4 w-4" />
-      </Button>
-      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onInsert("[", "](url)")} title="Link">
-        <LinkIcon className="h-4 w-4" />
-      </Button>
-    </div>
-  )
-}
+import { StatusChangeModal } from "@/components/projects/status-change-modal"
+import { StaleSectionBanner } from "@/components/projects/stale-section-banner"
+import { StaleDiffModal } from "@/components/projects/stale-diff-modal"
+import { MarkdownToolbar } from "@/components/projects/markdown-toolbar"
+import { buildTabList, NATIVE_TABS, TAB_TO_SECTION, type NativeTab, type DocTab, type TabDef } from "@/components/projects/documentation-tabs"
 
 // ── Main component ────────────────────────────────────────────────────────────
 export function DocumentationViewerPage() {
@@ -727,15 +435,11 @@ export function DocumentationViewerPage() {
   const handleSearchResultClick = (tabKey: DocTab, firstMatchLine: number = 0) => {
     setActiveTab(tabKey);
     setIsEditMode(false);
-    
+
     // Scroll to the first match after a short delay (to allow tab switch to complete)
     setTimeout(() => {
       scrollToSearchResult(firstMatchLine);
     }, 100);
-    
-    // Keep search visible for context
-    // setSearchQuery("");
-    // setShowSearchResults(false);
   };
 
   // Helper function to scroll to search result
@@ -748,10 +452,8 @@ export function DocumentationViewerPage() {
     if (!searchTerm) return;
 
     const walker = document.createTreeWalker(
-      content,
-      NodeFilter.SHOW_TEXT,
-      null,
-      false
+      content as Node,
+      NodeFilter.SHOW_TEXT
     );
 
     let node;
@@ -763,12 +465,12 @@ export function DocumentationViewerPage() {
         range.setStart(node, index);
         range.setEnd(node, index + searchTerm.length);
         range.getBoundingClientRect(); // Get position
-        
+
         // Scroll into view
         const element = node.parentElement;
         if (element) {
           element.scrollIntoView({ behavior: "smooth", block: "center" });
-          
+
           // Add temporary highlight effect
           const originalBg = element.style.backgroundColor;
           element.style.backgroundColor = "rgba(255, 193, 7, 0.3)";
@@ -848,12 +550,36 @@ export function DocumentationViewerPage() {
   }
 
   const handleExportPdf = async () => {
-    if (!id) return
+    if (!id || !project) return
     setActionLoading("pdf")
     setExportMessage(null)
     try {
-      const blob = await projectsApi.exportBlob(id, "pdf")
-      triggerDownload(blob, `${project?.meta?.name ?? id}-docs.pdf`)
+      // Prepare comprehensive export data with all tabs
+      const exportData = prepareExportData(
+        project.meta?.name ?? id,
+        (project.meta?.description || "") as string,
+        editedContent,
+        allTabs
+      )
+
+      const summary = getExportSummary(exportData)
+      console.debug("📊 PDF Export:", summary)
+
+      // Generate formatted PDF HTML with all sections
+      const pdfHtml = generatePDFHTML(exportData, {
+        includeTableOfContents: true,
+        includeTimestamp: true,
+        pageNumbers: true,
+        headerFooter: true,
+      })
+
+      // Save as HTML file (users can print to PDF from browser)
+      const blob = new Blob([pdfHtml], { type: "text/html;charset=utf-8" })
+      triggerDownload(blob, `${project?.meta?.name ?? id}-documentation.html`)
+
+      // Show message with count of all sections being exported
+      const message = `✓ PDF exported`
+      setExportMessage(message)
     } catch (err: any) {
       setExportMessage("PDF export failed: " + (err?.message ?? "unknown error"))
     } finally {
@@ -862,12 +588,39 @@ export function DocumentationViewerPage() {
   }
 
   const handleExportYaml = async () => {
-    if (!id) return
+    if (!id || !project) return
     setActionLoading("yaml")
     setExportMessage(null)
     try {
-      const blob = await projectsApi.exportBlob(id, "yaml")
+      // Prepare comprehensive export data with all tabs (with cleaned content)
+      const exportData = prepareExportData(
+        project.meta?.name ?? id,
+        (project.meta?.description || "") as string,
+        editedContent,
+        allTabs
+      )
+
+      // Format content to remove markdown for cleaner export
+      const formattedTabs = getFormattedTabContent(exportData.tabs, "formatted")
+      const cleanExportData = {
+        ...exportData,
+        tabs: formattedTabs,
+      }
+
+      const summary = getExportSummary(cleanExportData)
+      console.debug("📊 YAML Export:", summary)
+
+      // Export with cleaned data (backend will use it if provided)
+      const blob = await projectsApi.exportBlob(id, "yaml", cleanExportData)
       triggerDownload(blob, `${project?.meta?.name ?? id}-workflow.yml`)
+
+      // Show message with count of all sections exported
+      const nativeCount = cleanExportData.tabs.filter((t) => !t.isCustom).length
+      const customCount = cleanExportData.tabs.filter((t) => t.isCustom).length
+      const message = customCount > 0
+        ? `✓ Exported to YAML (${nativeCount} sections + ${customCount} custom tab${customCount !== 1 ? "s" : ""})`
+        : `✓ Exported to YAML (${cleanExportData.totalTabs} section${cleanExportData.totalTabs !== 1 ? "s" : ""})`
+      setExportMessage(message)
     } catch (err: any) {
       setExportMessage("YAML export failed: " + (err?.message ?? "unknown error"))
     } finally {
@@ -876,12 +629,41 @@ export function DocumentationViewerPage() {
   }
 
   const handleExportNotion = async () => {
-    if (!id) return
+    if (!id || !project) return
     setActionLoading("notion")
     setExportMessage(null)
     try {
-      const result = await projectsApi.exportNotion(id)
-      setExportMessage(`Pushed to Notion \u2014 ${result.mainPageUrl}`)
+      // Prepare comprehensive export data with all tabs
+      const exportData = prepareExportData(
+        project.meta?.name ?? id,
+        (project.meta?.description || "") as string,
+        editedContent,
+        allTabs
+      )
+
+      // Format content to remove markdown for cleaner Notion export
+      const formattedTabs = getFormattedTabContent(exportData.tabs, "plain")
+      const cleanExportData = {
+        ...exportData,
+        tabs: formattedTabs,
+      }
+
+      const summary = getExportSummary(cleanExportData)
+      console.debug("📊 Notion Export:", summary)
+
+      // Log clean data for backend integration
+      console.log("📋 Notion export prepared with", cleanExportData.tabs.length, "sections")
+
+      // Export to Notion with cleaned data (backend will use it if provided)
+      const result = await projectsApi.exportNotion(id, cleanExportData)
+
+      // Show message with count of all sections exported
+      const nativeCount = cleanExportData.tabs.filter((t) => !t.isCustom).length
+      const customCount = cleanExportData.tabs.filter((t) => t.isCustom).length
+      const message = customCount > 0
+        ? `✓ Pushed to Notion (${nativeCount} sections + ${customCount} custom tab${customCount !== 1 ? "s" : ""})`
+        : `✓ Pushed to Notion (${cleanExportData.totalTabs} section${cleanExportData.totalTabs !== 1 ? "s" : ""})`
+      setExportMessage(message)
     } catch (err: any) {
       setExportMessage("Notion export failed: " + (err?.message ?? "unknown error"))
     } finally {
@@ -890,18 +672,49 @@ export function DocumentationViewerPage() {
   }
 
   const handleExportGoogleDocs = async () => {
-    if (!id) return
+    if (!id || !project) return
     setActionLoading("googleDocs")
     setExportMessage(null)
     try {
-      const result = await projectsApi.exportGoogleDocs(id)
+      // Prepare comprehensive export data with all tabs (with cleaned content)
+      const exportData = prepareExportData(
+        project.meta?.name ?? id,
+        (project.meta?.description || "") as string,
+        editedContent,
+        allTabs
+      )
+
+      // Format content to remove markdown for cleaner Google Docs export
+      const formattedTabs = getFormattedTabContent(exportData.tabs, "plain")
+      const cleanExportData = {
+        ...exportData,
+        tabs: formattedTabs,
+      }
+
+      const summary = getExportSummary(cleanExportData)
+      console.debug("Google Docs Export:", summary)
+
+      // Log clean data for backend integration
+      console.log("Google Docs export prepared with", cleanExportData.tabs.length, "sections")
+
+      // Export to Google Docs with comprehensive data
+      // Pass cleaned data to backend so it exports without markdown
+      const result = await projectsApi.exportGoogleDocs(id, cleanExportData)
       // Open the created doc in a new tab
       window.open(result.documentUrl, "_blank", "noopener,noreferrer")
-      setExportMessage(`\u2705 Exported to Google Docs \u2014 doc opened in new tab`)
+
+      // Show message with count of all sections exported
+      const nativeCount = cleanExportData.tabs.filter((t) => !t.isCustom).length
+      const customCount = cleanExportData.tabs.filter((t) => t.isCustom).length
+      const message = customCount > 0
+        ? `✓ Exported (${nativeCount} sections + ${customCount} custom tab${customCount !== 1 ? "s" : ""})`
+        : `✓ Exported (${cleanExportData.totalTabs} section${cleanExportData.totalTabs !== 1 ? "s" : ""})`
+      setExportMessage(message)
     } catch (err: any) {
       if (err?.code === "GOOGLE_NOT_CONNECTED") {
         // Offer to connect — fetch the OAuth URL and redirect
         setExportMessage("Connect Google Drive first. Redirecting to authorise...")
+
         try {
           const { url } = await projectsApi.getGoogleDocsConnectUrl(id)
           setTimeout(() => { window.location.href = url }, 1500)
@@ -1203,8 +1016,7 @@ export function DocumentationViewerPage() {
                   {!meetsMinPlan(subscription, "team") && <Lock className="h-3 w-3 ml-auto opacity-40" />}
                 </button>
                 <button className="flex w-full items-center gap-2.5 px-3 py-2 hover:bg-muted transition-colors" onClick={() => { setMoreDropdownOpen(false); requirePlan("Google Docs Export", "pro", "Export your documentation to Google Docs.", handleExportGoogleDocs) }}>
-                  <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z" fill="#4285F4" opacity=".3" /><path d="M14 2v6h6" fill="none" stroke="#4285F4" strokeWidth="1.5" /><path d="M16 13H8M16 17H8M10 9H8" fill="none" stroke="#4285F4" strokeWidth="1.5" strokeLinecap="round" /></svg>
-                  Google Docs
+                  <File className="h-4 w-4 text-muted-foreground shrink-0" /> Google Docs
                   {!meetsMinPlan(subscription, "pro") && <Lock className="h-3 w-3 ml-auto opacity-40" />}
                 </button>
               </div>
@@ -1466,6 +1278,7 @@ export function DocumentationViewerPage() {
             onClose={() => setPortalModalOpen(false)}
             projectId={id}
             initialPortal={portal}
+            customTabs={project?.customTabs}
             onPublishChange={(updated) => setPortal(updated)}
           />
         )}

@@ -2,6 +2,8 @@ import { useState, useEffect } from "react"
 import { useParams, Link, useNavigate } from "react-router-dom"
 import { useProjectStore } from "@/store/projects"
 import { projectsApi, ApiException } from "@/lib/api"
+import { prepareExportData, getExportSummary, getFormattedTabContent } from "@/lib/export-utils"
+import { generatePDFHTML } from "@/lib/pdf-generator"
 import { useSubscriptionStore, meetsMinPlan } from "@/store/subscription"
 import { UpgradeModal } from "@/components/billing/UpgradeModal"
 import { DocRenderer } from "@/components/projects/DocRenderer"
@@ -29,6 +31,16 @@ import {
     Lock,
 } from "lucide-react"
 import Loader1 from "@/components/ui/loader1"
+
+// ── Helper for file downloads ──────────────────────────────────────────
+const triggerDownload = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+}
 
 export function ProjectOverviewPage() {
     const { id } = useParams<{ id: string }>()
@@ -188,15 +200,65 @@ export function ProjectOverviewPage() {
         setActionLoading("pdf")
         setExportMessage(null)
         try {
-            const blob = await projectsApi.exportBlob(project.id, "pdf")
-            const url = URL.createObjectURL(blob)
-            const a = document.createElement("a")
-            a.href = url
-            a.download = `${project.name}-docs.pdf`
-            a.click()
-            URL.revokeObjectURL(url)
+            // Prepare export data with project metadata
+            const tabs = [
+                {
+                    id: "readme",
+                    name: "README",
+                    content: project.output?.readme || "",
+                    isCustom: false,
+                },
+                {
+                    id: "api",
+                    name: "API Reference",
+                    content: project.output?.apiReference || "",
+                    isCustom: false,
+                },
+                {
+                    id: "schema",
+                    name: "Schema",
+                    content: project.output?.schemaDocs || "",
+                    isCustom: false,
+                },
+                {
+                    id: "internal",
+                    name: "Internal",
+                    content: project.output?.internalDocs || "",
+                    isCustom: false,
+                },
+                {
+                    id: "security",
+                    name: "Security",
+                    content: project.output?.securityReport || "",
+                    isCustom: false,
+                },
+            ].filter((t) => t.content)
+
+            const exportData = {
+                projectName: project.name,
+                description: project.description || "",
+                tabs,
+                totalTabs: tabs.length,
+            }
+
+            const summary = getExportSummary(exportData)
+            console.debug("📊 PDF Export:", summary)
+
+            // Generate formatted PDF HTML
+            const pdfHtml = generatePDFHTML(exportData, {
+                includeTableOfContents: true,
+                includeTimestamp: true,
+                pageNumbers: true,
+                headerFooter: true,
+            })
+
+            // Save as HTML file (users can print to PDF from browser)
+            const blob = new Blob([pdfHtml], { type: "text/html;charset=utf-8" })
+            triggerDownload(blob, `${project.name}-documentation.html`)
+
+            setExportMessage("✓ PDF exported")
         } catch (err: any) {
-            setExportMessage(err?.message ?? "PDF export failed.")
+            setExportMessage("PDF export failed: " + (err?.message ?? "unknown error"))
         } finally {
             setActionLoading(null)
         }
@@ -206,15 +268,67 @@ export function ProjectOverviewPage() {
         setActionLoading("yaml")
         setExportMessage(null)
         try {
-            const blob = await projectsApi.exportBlob(project.id, "yaml")
-            const url = URL.createObjectURL(blob)
-            const a = document.createElement("a")
-            a.href = url
-            a.download = `${project.name}-workflow.yml`
-            a.click()
-            URL.revokeObjectURL(url)
+            // Prepare export data with all available sections
+            const tabs = [
+                {
+                    id: "readme",
+                    name: "README",
+                    content: project.output?.readme || "",
+                    isCustom: false,
+                },
+                {
+                    id: "api",
+                    name: "API Reference",
+                    content: project.output?.apiReference || "",
+                    isCustom: false,
+                },
+                {
+                    id: "schema",
+                    name: "Schema",
+                    content: project.output?.schemaDocs || "",
+                    isCustom: false,
+                },
+                {
+                    id: "internal",
+                    name: "Internal",
+                    content: project.output?.internalDocs || "",
+                    isCustom: false,
+                },
+                {
+                    id: "security",
+                    name: "Security",
+                    content: project.output?.securityReport || "",
+                    isCustom: false,
+                },
+            ].filter((t) => t.content)
+
+            const exportData = {
+                projectName: project.name,
+                description: project.description || "",
+                tabs,
+                totalTabs: tabs.length,
+            }
+
+            // Format content to remove markdown for cleaner export
+            const formattedTabs = getFormattedTabContent(exportData.tabs, "formatted")
+            const cleanExportData = {
+                ...exportData,
+                tabs: formattedTabs,
+            }
+
+            const summary = getExportSummary(cleanExportData)
+            console.debug("📊 YAML Export:", summary)
+
+            // Export with cleaned data
+            const blob = await projectsApi.exportBlob(project.id, "yaml", cleanExportData)
+            triggerDownload(blob, `${project.name}-workflow.yml`)
+
+            const message = cleanExportData.totalTabs > 0
+                ? `✓ Exported to YAML (${cleanExportData.totalTabs} section${cleanExportData.totalTabs !== 1 ? "s" : ""})`
+                : "✓ Exported to YAML"
+            setExportMessage(message)
         } catch (err: any) {
-            setExportMessage(err?.message ?? "YAML export failed.")
+            setExportMessage("YAML export failed: " + (err?.message ?? "unknown error"))
         } finally {
             setActionLoading(null)
         }

@@ -35,7 +35,7 @@ import { cn } from "@/lib/utils"
 import { BillingTab } from "@/pages/settings/billing"
 import Loader1 from "@/components/ui/loader1"
 import { CopyButton } from "@/components/common"
-import { GeneralSettingsCard } from "@/components/settings/sections"
+import { GeneralSettingsCard } from "@/components/settings/GeneralSettingsCard"
 
 // ── GitHub Integration card ──────────────────────────────────────────────────
 function GitHubCard() {
