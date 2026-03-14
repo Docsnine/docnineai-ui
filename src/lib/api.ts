@@ -9,6 +9,8 @@
  *   4. Throws a structured ApiError on failure.
  */
 import { fetchEventSource } from "@microsoft/fetch-event-source";
+import { useAuthStore } from "@/store/auth";
+import { useSessionStore } from "@/store/session";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -154,6 +156,15 @@ export async function apiFetch<T = unknown>(
       code: "UNKNOWN_ERROR",
       message: "An unexpected error occurred.",
     };
+    
+    // Handle session expiration (401 error after refresh attempt failed)
+    if (res.status === 401) {
+      const authStore = useAuthStore();
+      const sessionStore = useSessionStore();
+      authStore.clearAuth();
+      sessionStore.showSessionExpired();
+    }
+    
     throw new ApiException(res.status, err);
   }
 
@@ -346,6 +357,70 @@ export const authApi = {
     }>("/auth/webhook", {
       method: "PATCH",
       body: JSON.stringify({ webhookEnabled }),
+    }),
+
+  /** API Tokens — for MCP, CLI, and other integrations */
+  createToken: (body: {
+    name: string;
+    description?: string;
+    scope?: string[];
+    expiresAt?: string;
+  }) =>
+    apiFetch<{
+      id: string;
+      plainToken: string;
+      name: string;
+      lastChars: string;
+      scope: string[];
+      createdAt: string;
+      expiresAt?: string;
+    }>("/auth/tokens", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  listTokens: () =>
+    apiFetch<{
+      tokens: Array<{
+        id: string;
+        name: string;
+        description?: string;
+        lastChars: string;
+        scope: string[];
+        expiresAt?: string;
+        lastUsedAt?: string;
+        createdAt: string;
+        isRevoked: boolean;
+      }>;
+      stats: {
+        total: number;
+        active: number;
+        revoked: number;
+        expiringSoon: number;
+      };
+    }>("/auth/tokens"),
+
+  getToken: (tokenId: string) =>
+    apiFetch<{
+      id: string;
+      name: string;
+      description?: string;
+      lastChars: string;
+      scope: string[];
+      expiresAt?: string;
+      lastUsedAt?: string;
+      createdAt: string;
+      isRevoked: boolean;
+    }>(`/auth/tokens/${tokenId}`),
+
+  revokeToken: (tokenId: string) =>
+    apiFetch<{ message: string }>(`/auth/tokens/${tokenId}`, {
+      method: "DELETE",
+    }),
+
+  deleteToken: (tokenId: string) =>
+    apiFetch<{ deleted: boolean }>(`/auth/tokens/${tokenId}?permanent=true`, {
+      method: "DELETE",
     }),
 };
 
@@ -820,6 +895,15 @@ export const projectsApi = {
       effectiveOutput: ApiProjectOutput;
       editedSections: ApiProjectEditedSection[];
     }>(`/projects/${id}/docs/${section}/accept-ai`, { method: "POST" }),
+
+  /** Get MCP server configuration for this project. */
+  getMCPInfo: (id: string) =>
+    apiFetch<{
+      projectId: string;
+      projectName: string;
+      mcpUrl: string;
+      status: string;
+    }>(`/projects/${id}/mcp/info`),
 };
 
 // ── Version history ───────────────────────────────────────────────────────

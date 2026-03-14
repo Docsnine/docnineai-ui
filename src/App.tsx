@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo } from "react"
+import { lazy, Suspense, useEffect, useMemo, useState } from "react"
 import {
   BrowserRouter as Router,
   Routes,
@@ -9,8 +9,10 @@ import {
   matchPath,
 } from "react-router-dom"
 import { useAuthStore } from "@/store/auth"
+import { useSessionStore } from "@/store/session"
 import { ThemeProvider } from "@/providers/theme-provider"
 import { getSiteUrl, type SeoConfig, useSeo } from "@/lib/seo"
+import { SessionExpiredDialog } from "@/components/dialogs/SessionExpiredDialog"
 import ApplicationLogo from "./components/application-logo"
 import Loader1 from "./components/ui/loader1"
 import { GuestLayout } from "./layout/guest"
@@ -325,6 +327,7 @@ function ScrollRestoration() {
 
 function AppRoutes() {
   const { initAuth, initialized } = useAuthStore()
+  const { sessionExpiredOpen, hideSessionExpired } = useSessionStore()
 
   useEffect(() => {
     const oauthPaths = ["/github/oauth/complete", "/gitlab/oauth/complete", "/bitbucket/oauth/complete", "/azure/oauth/complete"]
@@ -338,8 +341,9 @@ function AppRoutes() {
   if (!initialized) return <PageLoader />
 
   return (
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
+    <>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
 
         {/* Guest layouts */}
         <Route element={<GuestLayout />}>
@@ -396,7 +400,10 @@ function AppRoutes() {
         <Route path="*" element={<Navigate to="/" replace />} />
 
       </Routes>
-    </Suspense>
+      </Suspense>
+
+      <SessionExpiredDialog open={sessionExpiredOpen} onOpenChange={hideSessionExpired} />
+    </>
   )
 }
 

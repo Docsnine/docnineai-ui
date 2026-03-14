@@ -36,6 +36,7 @@ import { BillingTab } from "@/pages/settings/billing"
 import Loader1 from "@/components/ui/loader1"
 import { CopyButton } from "@/components/common"
 import { GeneralSettingsCard } from "@/components/settings/GeneralSettingsCard"
+import { APITokensCard } from "@/components/settings/APITokensCard"
 
 // ── GitHub Integration card ──────────────────────────────────────────────────
 function GitHubCard() {
@@ -1307,9 +1308,10 @@ function AzureDevOpsCard() {
 
 // ── Tab nav ───────────────────────────────────────────────────────────────────
 const TABS = [
-    { id: "general", label: "General Settings", icon: User },
+    { id: "general", label: "General", icon: User },
     { id: "integrations", label: "Integrations", icon: Puzzle },
-    { id: "billing", label: "Billing & Subscription", icon: CreditCard },
+    { id: "billing", label: "Billings", icon: CreditCard },
+    { id: "api-tokens", label: "Tokens", icon: KeyRound },
 ] as const
 type TabId = typeof TABS[number]["id"]
 
@@ -1378,6 +1380,8 @@ export function SettingsPage() {
                 {/* Tab content */}
                 {activeTab === "general" ? (
                     <GeneralSettingsCard />
+                ) : activeTab === "api-tokens" ? (
+                    <APITokensCard />
                 ) : activeTab === "integrations" ? (
                     <div className="space-y-6">
                         <GitHubCard />

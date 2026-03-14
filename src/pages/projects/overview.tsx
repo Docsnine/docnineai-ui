@@ -31,6 +31,7 @@ import {
     Lock,
 } from "lucide-react"
 import Loader1 from "@/components/ui/loader1"
+import { MCPServerCard } from "@/components/settings/MCPServerCard"
 
 // ── Helper for file downloads ──────────────────────────────────────────
 const triggerDownload = (blob: Blob, filename: string) => {
@@ -622,6 +623,11 @@ export function ProjectOverviewPage() {
                             </div>
                         </CardContent>
                     </Card>
+
+                    {/* MCP Server Card */}
+                    {project && project.status === "completed" && (
+                        <MCPServerCard projectId={id} />
+                    )}
                 </div>
             </div>
 
