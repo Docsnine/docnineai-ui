@@ -14,7 +14,10 @@ export default defineConfig(({ mode }) => {
   // by the SPA (index.html), NOT forwarded to Express.
   // XHR / fetch calls send Accept: application/json or no text/html —
   // those are forwarded to the backend as normal API requests.
-  type BypassFn = (req: { url?: string; headers?: Record<string, string> }) => string | undefined | null;
+  type BypassFn = (req: {
+    url?: string;
+    headers?: Record<string, string>;
+  }) => string | undefined | null;
 
   const makeProxy = (extraBypass?: BypassFn) => ({
     target: BACKEND_URL,
@@ -36,14 +39,14 @@ export default defineConfig(({ mode }) => {
   });
 
   const proxyConfig: Record<string, object> = {
-    "/auth":     makeProxy(),
-    "/github":   makeProxy(),
+    "/auth": makeProxy(),
+    "/github": makeProxy(),
     "/projects": makeProxy(),
-    "/billing":  makeProxy(),
-    "/portal":   makeProxy(),
-    "/webhook":  makeProxy(),
-    "/api":      makeProxy(),
-    "/health":   makeProxy(),
+    "/billing": makeProxy(),
+    "/portal": makeProxy(),
+    "/webhook": makeProxy(),
+    "/api": makeProxy(),
+    "/health": makeProxy(),
   };
 
   return {

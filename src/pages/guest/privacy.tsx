@@ -5,14 +5,12 @@ import CTA from "@/components/CTA"
 
 export function PrivacyPage() {
     return (
-        <div className="relative min-h-screen bg-background text-foreground overflow-hidden font-sans">
+        <div>
             <BackgroundGrid />
 
             <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] rounded-full bg-foreground/10 blur-[120px] pointer-events-none z-0" />
 
-            <TopHeader />
-
-            <main className="relative z-10 py-20 px-4">
+            <section className="relative z-10 py-20 px-4">
                 <div className="container mx-auto max-w-3xl mb-24">
                     {/* Page heading */}
                     <div className="mb-12">
@@ -161,12 +159,7 @@ export function PrivacyPage() {
                         </section>
                     </div>
                 </div>
-
-                {/* CTA Section */}
-                <CTA />
-            </main>
-
-            <Footer />
+            </section>
         </div>
     )
 }

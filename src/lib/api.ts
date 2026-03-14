@@ -9,6 +9,8 @@
  *   4. Throws a structured ApiError on failure.
  */
 import { fetchEventSource } from "@microsoft/fetch-event-source";
+import { useAuthStore } from "@/store/auth";
+import { useSessionStore } from "@/store/session";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -154,6 +156,15 @@ export async function apiFetch<T = unknown>(
       code: "UNKNOWN_ERROR",
       message: "An unexpected error occurred.",
     };
+    
+    // Handle session expiration (401 error after refresh attempt failed)
+    if (res.status === 401) {
+      const authStore = useAuthStore();
+      const sessionStore = useSessionStore();
+      authStore.clearAuth();
+      sessionStore.showSessionExpired();
+    }
+    
     throw new ApiException(res.status, err);
   }
 
@@ -186,7 +197,12 @@ export interface AuthResponse {
 }
 
 export const authApi = {
-  signup: (body: { name: string; email: string; password: string }) =>
+  signup: (body: {
+    name: string;
+    email: string;
+    password: string;
+    agreeToTerms: boolean;
+  }) =>
     apiFetch<AuthResponse>("/auth/signup", {
       method: "POST",
       body: JSON.stringify(body),
@@ -342,6 +358,70 @@ export const authApi = {
       method: "PATCH",
       body: JSON.stringify({ webhookEnabled }),
     }),
+
+  /** API Tokens — for MCP, CLI, and other integrations */
+  createToken: (body: {
+    name: string;
+    description?: string;
+    scope?: string[];
+    expiresAt?: string;
+  }) =>
+    apiFetch<{
+      id: string;
+      plainToken: string;
+      name: string;
+      lastChars: string;
+      scope: string[];
+      createdAt: string;
+      expiresAt?: string;
+    }>("/auth/tokens", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  listTokens: () =>
+    apiFetch<{
+      tokens: Array<{
+        id: string;
+        name: string;
+        description?: string;
+        lastChars: string;
+        scope: string[];
+        expiresAt?: string;
+        lastUsedAt?: string;
+        createdAt: string;
+        isRevoked: boolean;
+      }>;
+      stats: {
+        total: number;
+        active: number;
+        revoked: number;
+        expiringSoon: number;
+      };
+    }>("/auth/tokens"),
+
+  getToken: (tokenId: string) =>
+    apiFetch<{
+      id: string;
+      name: string;
+      description?: string;
+      lastChars: string;
+      scope: string[];
+      expiresAt?: string;
+      lastUsedAt?: string;
+      createdAt: string;
+      isRevoked: boolean;
+    }>(`/auth/tokens/${tokenId}`),
+
+  revokeToken: (tokenId: string) =>
+    apiFetch<{ message: string }>(`/auth/tokens/${tokenId}`, {
+      method: "DELETE",
+    }),
+
+  deleteToken: (tokenId: string) =>
+    apiFetch<{ deleted: boolean }>(`/auth/tokens/${tokenId}?permanent=true`, {
+      method: "DELETE",
+    }),
 };
 
 // ── GitHub ────────────────────────────────────────────────────────────────
@@ -404,6 +484,147 @@ export const githubApi = {
   },
 
   disconnect: () => apiFetch<void>("/github/disconnect", { method: "DELETE" }),
+};
+
+// ── GitLab ────────────────────────────────────────────────────────────────
+
+export interface GitLabStatus {
+  connected: boolean;
+  gitlabUsername?: string;
+  scopes?: string[];
+  connectedAt?: string;
+}
+
+export interface GitLabRepo {
+  id: number;
+  name: string;
+  path_with_namespace: string;
+  web_url: string;
+  description?: string;
+  visibility: "public" | "private" | "internal";
+  last_activity_at: string;
+}
+
+export interface GitLabReposResponse {
+  repos: GitLabRepo[];
+  page: number;
+  perPage: number;
+  hasNextPage: boolean;
+}
+
+export const gitlabApi = {
+  getStatus: () => apiFetch<GitLabStatus>("/gitlab/status"),
+
+  getOAuthStartUrl: () => apiFetch<{ url: string }>("/gitlab/oauth/start"),
+
+  getRepos: (
+    params: {
+      page?: number;
+      perPage?: number;
+      sort?: string;
+    } = {},
+  ) => {
+    const qs = new URLSearchParams();
+    if (params.page) qs.set("page", String(params.page));
+    if (params.perPage) qs.set("perPage", String(params.perPage));
+    if (params.sort) qs.set("sort", params.sort);
+    return apiFetch<GitLabReposResponse>(`/gitlab/repos?${qs}`);
+  },
+
+  disconnect: () => apiFetch<void>("/gitlab/disconnect", { method: "DELETE" }),
+};
+
+// ── Bitbucket ─────────────────────────────────────────────────────────────
+
+export interface BitbucketStatus {
+  connected: boolean;
+  bitbucketUsername?: string;
+  scopes?: string[];
+  connectedAt?: string;
+}
+
+export interface BitbucketRepo {
+  uuid: string;
+  name: string;
+  full_slug: string;
+  links: { html: { href: string } };
+  description?: string;
+  is_private: boolean;
+  updated_on: string;
+}
+
+export interface BitbucketReposResponse {
+  repos: BitbucketRepo[];
+  page: number;
+  perPage: number;
+  hasNextPage: boolean;
+}
+
+export const bitbucketApi = {
+  getStatus: () => apiFetch<BitbucketStatus>("/bitbucket/status"),
+
+  getOAuthStartUrl: () => apiFetch<{ url: string }>("/bitbucket/oauth/start"),
+
+  getRepos: (
+    params: {
+      page?: number;
+      perPage?: number;
+    } = {},
+  ) => {
+    const qs = new URLSearchParams();
+    if (params.page) qs.set("page", String(params.page));
+    if (params.perPage) qs.set("perPage", String(params.perPage));
+    return apiFetch<BitbucketReposResponse>(`/bitbucket/repos?${qs}`);
+  },
+
+  disconnect: () =>
+    apiFetch<void>("/bitbucket/disconnect", { method: "DELETE" }),
+};
+
+// ── Azure DevOps ──────────────────────────────────────────────────────────
+
+export interface AzureStatus {
+  connected: boolean;
+  azureUsername?: string;
+  scopes?: string[];
+  connectedAt?: string;
+}
+
+export interface AzureRepo {
+  id: string;
+  name: string;
+  webUrl: string;
+  projectName: string;
+  projectId?: string;
+  isPrivate: boolean;
+  lastUpdated?: string;
+}
+
+export interface AzureReposResponse {
+  repos: AzureRepo[];
+  page: number;
+  perPage: number;
+  hasNextPage: boolean;
+}
+
+export const azureApi = {
+  getStatus: () => apiFetch<AzureStatus>("/azure/status"),
+
+  getOAuthStartUrl: () => apiFetch<{ url: string }>("/azure/oauth/start"),
+
+  getRepos: (
+    params: {
+      page?: number;
+      perPage?: number;
+    } = {},
+  ) => {
+    const qs = new URLSearchParams();
+    if (params.page) qs.set("page", String(params.page));
+    if (params.perPage) qs.set("perPage", String(params.perPage));
+    return apiFetch<AzureReposResponse>(`/azure/repos?${qs}`);
+  },
+
+  disconnect: () => apiFetch<void>("/azure/disconnect", { method: "DELETE" }),
 };
 
 // ── Projects ──────────────────────────────────────────────────────────────
@@ -474,6 +695,7 @@ export interface ApiProject {
   output: ApiProjectOutput;
   editedOutput: ApiProjectOutput;
   editedSections: ApiProjectEditedSection[];
+  customTabs?: CustomTab[];
   createdAt: string;
   updatedAt: string;
   chatSessionId?: string;
@@ -526,10 +748,54 @@ export const projectsApi = {
 
   get: (id: string) => apiFetch<ProjectGetResponse>(`/projects/${id}`),
 
+  /**
+   * Create a project from a repository URL (GitHub, GitLab, Bitbucket, Azure).
+   * The provider is auto-detected from the URL.
+   */
   create: (repoUrl: string) =>
     apiFetch<{ project: ApiProject; streamUrl: string }>("/projects", {
       method: "POST",
       body: JSON.stringify({ repoUrl }),
+    }),
+
+  /**
+   * Validate a ZIP file before uploading (optional — checks structure, size, etc).
+   */
+  validateZip: (file: File) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    return apiFetch<{
+      valid: boolean;
+      message?: string;
+      stats?: { files: number; totalSize: number; languages: string[] };
+    }>("/projects/zip/validate", {
+      method: "POST",
+      body: fd,
+    });
+  },
+
+  /**
+   * Upload a ZIP file and create a project from it.
+   * Automatically extracts and scans the contents.
+   */
+  uploadZip: (file: File, projectName?: string) => {
+    const fd = new FormData();
+    fd.append("file", file);
+    if (projectName) fd.append("projectName", projectName);
+    return apiFetch<{ project: ApiProject }>("/projects/zip/upload", {
+      method: "POST",
+      body: fd,
+    });
+  },
+
+  /**
+   * Create a blank "from scratch" project with no repository.
+   * Returns a ready-to-edit project.
+   */
+  createFromScratch: (projectName: string) =>
+    apiFetch<{ project: ApiProject }>("/projects/from-scratch", {
+      method: "POST",
+      body: JSON.stringify({ projectName }),
     }),
 
   update: (id: string, body: { status: "archived" }) =>
@@ -550,11 +816,16 @@ export const projectsApi = {
     ),
 
   /** Download an export as a Blob. Caller triggers the browser download. */
-  exportBlob: async (id: string, type: "pdf" | "yaml") => {
+  exportBlob: async (id: string, type: "pdf" | "yaml", data?: any) => {
     const token = _accessToken;
     const res = await fetch(`${API_BASE}/projects/${id}/export/${type}`, {
+      method: "POST",
       credentials: "include",
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(data ? { "Content-Type": "application/json" } : {}),
+      },
+      ...(data && { body: JSON.stringify(data) }),
     });
     if (!res.ok)
       throw new ApiException(res.status, {
@@ -564,10 +835,13 @@ export const projectsApi = {
     return res.blob();
   },
 
-  exportNotion: (id: string) =>
+  exportNotion: (id: string, data?: any) =>
     apiFetch<{ mainPageUrl: string; mainPageId: string; childPages: string[] }>(
       `/projects/${id}/export/notion`,
-      { method: "POST" },
+      {
+        method: "POST",
+        ...(data && { body: JSON.stringify(data) }),
+      },
     ),
 
   /** Get Google Docs OAuth connect URL for the project owner. */
@@ -588,10 +862,13 @@ export const projectsApi = {
     apiFetch<void>(`/projects/${id}/export/google-docs`, { method: "DELETE" }),
 
   /** Export project docs to a new Google Doc. */
-  exportGoogleDocs: (id: string) =>
+  exportGoogleDocs: (id: string, data?: any) =>
     apiFetch<{ documentId: string; documentUrl: string; title: string }>(
       `/projects/${id}/export/google-docs`,
-      { method: "POST" },
+      {
+        method: "POST",
+        ...(data && { body: JSON.stringify(data) }),
+      },
     ),
 
   /** Fetch the persisted pipeline event log for a project (last 200 events). */
@@ -618,6 +895,15 @@ export const projectsApi = {
       effectiveOutput: ApiProjectOutput;
       editedSections: ApiProjectEditedSection[];
     }>(`/projects/${id}/docs/${section}/accept-ai`, { method: "POST" }),
+
+  /** Get MCP server configuration for this project. */
+  getMCPInfo: (id: string) =>
+    apiFetch<{
+      projectId: string;
+      projectName: string;
+      mcpUrl: string;
+      status: string;
+    }>(`/projects/${id}/mcp/info`),
 };
 
 // ── Version history ───────────────────────────────────────────────────────
@@ -1157,6 +1443,70 @@ export const apiSpecApi = {
       method: "POST",
       body: JSON.stringify(opts),
     }),
+};
+
+// ── Custom Tabs ───────────────────────────────────────────────────────────
+
+export interface CustomTab {
+  _id: string;
+  name: string;
+  description: string;
+  content: string;
+  order: number;
+  isNative: boolean;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+}
+
+export const customTabsApi = {
+  /** List all custom tabs for a project (sorted by order). */
+  list: (projectId: string) =>
+    apiFetch<{ tabs: CustomTab[] }>(`/projects/${projectId}/custom-tabs`),
+
+  /** Create a new custom tab. */
+  create: (
+    projectId: string,
+    data: { name: string; description?: string; content?: string },
+  ) =>
+    apiFetch<{ project: ApiProject }>(`/projects/${projectId}/custom-tabs`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+
+  /** Update a custom tab (name, description, content). */
+  update: (
+    projectId: string,
+    tabId: string,
+    data: { name?: string; description?: string; content?: string },
+  ) =>
+    apiFetch<{ project: ApiProject }>(
+      `/projects/${projectId}/custom-tabs/${tabId}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      },
+    ),
+
+  /** Delete a custom tab. */
+  delete: (projectId: string, tabId: string) =>
+    apiFetch<{ project: ApiProject }>(
+      `/projects/${projectId}/custom-tabs/${tabId}`,
+      { method: "DELETE" },
+    ),
+
+  /** Reorder custom tabs (bulk operation). */
+  reorder: (
+    projectId: string,
+    orders: Array<{ tabId: string; order: number }>,
+  ) =>
+    apiFetch<{ project: ApiProject }>(
+      `/projects/${projectId}/custom-tabs/reorder`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({ orders }),
+      },
+    ),
 };
 
 // ---------------------------------------------------------------------------

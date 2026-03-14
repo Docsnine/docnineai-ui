@@ -54,24 +54,15 @@ export function GithubOAuthCompletePage() {
         }
 
         // 3. Close this window (works when we're a popup).
-        window.close()
+        if (window.opener) {
+            window.close()
+        } else {
+            // If not a popup, just show a message to the user
+            // Don't navigate - let the parent handle its own routing
+            console.log("[GitHub OAuth Complete] Not a popup window, staying on this page")
+        }
 
-        // 4. Fallback: window.close() is a no-op if we are NOT a popup
-        //    (the main tab navigated through GitHub because the popup was
-        //    blocked). In that case redirect to /projects after a short wait
-        //    so the user lands on the dashboard and the modal re-check works.
-        //    Use 800 ms so the parent tab's poll has two cycles to read
-        //    localStorage before we navigate away from this page.
-        const fallback = setTimeout(() => {
-            // Only navigate if this window is still open (not a popup that closed)
-            const qs = new URLSearchParams()
-            if (status) qs.set("github", status)
-            if (user)   qs.set("user", user)
-            if (msg)    qs.set("msg", msg)
-            window.location.replace(`/projects?${qs.toString()}`)
-        }, 800)
-
-        return () => clearTimeout(fallback)
+        return () => {} // No cleanup needed
     }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
     return (

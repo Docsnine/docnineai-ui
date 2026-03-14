@@ -19,6 +19,7 @@ import {
     type PortalAccessMode,
     PORTAL_SECTION_KEYS,
     PORTAL_SECTION_LABELS,
+    type CustomTab,
 } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import Loader1 from "../ui/loader1"
@@ -61,6 +62,8 @@ interface PortalSettingsModalProps {
     projectId: string
     /** Optional initial portal data (to avoid an extra fetch when already loaded) */
     initialPortal?: ApiPortal | null
+    /** Optional custom tabs from the project (to include in publishable sections) */
+    customTabs?: CustomTab[]
     onPublishChange?: (portal: ApiPortal) => void
 }
 
@@ -69,6 +72,7 @@ export function PortalSettingsModal({
     onClose,
     projectId,
     initialPortal,
+    customTabs = [],
     onPublishChange,
 }: PortalSettingsModalProps) {
     const [activeTab, setActiveTab] = useState<TabId>("general")
@@ -134,12 +138,26 @@ export function PortalSettingsModal({
     }, [isOpen, initialPortal, loadPortal])
 
     // ── Section visibility setter ──────────────────────────────────
-    function setSectionVisibility(key: PortalSectionKey, vis: PortalSectionVisibility) {
+    function setSectionVisibility(key: PortalSectionKey | string, vis: PortalSectionVisibility) {
         setDraftSections((prev) => {
             const existing = prev.find((s) => s.sectionKey === key)
             if (existing) return prev.map((s) => s.sectionKey === key ? { ...s, visibility: vis } : s)
-            return [...prev, { sectionKey: key, visibility: vis }]
+            return [...prev, { sectionKey: key as PortalSectionKey, visibility: vis }]
         })
+    }
+
+    // ── Get all publishable sections (native + custom tabs) ──────
+    const getAllPublishableSections = () => {
+        const sections: Array<{ key: string; label: string; isCustom: boolean }> = []
+        // Add native sections
+        PORTAL_SECTION_KEYS.forEach((key) => {
+            sections.push({ key, label: PORTAL_SECTION_LABELS[key], isCustom: false })
+        })
+        // Add custom tabs
+        customTabs.forEach((tab) => {
+            sections.push({ key: `custom_${tab._id}`, label: tab.name, isCustom: true })
+        })
+        return sections
     }
 
     // ── Save settings ──────────────────────────────────────────────
@@ -366,13 +384,13 @@ export function PortalSettingsModal({
                                     <p className="text-xs text-muted-foreground">
                                         Control which documentation sections appear in the public portal and how they are displayed.
                                     </p>
-                                    {PORTAL_SECTION_KEYS.map((key) => {
-                                        const vis = getEffectiveVisibility(draftSections, key)
+                                    {getAllPublishableSections().map(({ key, label, isCustom }) => {
+                                        const vis = getEffectiveVisibility(draftSections, key as PortalSectionKey)
                                         return (
                                             <div key={key} className="flex items-center justify-between rounded-lg border border-border p-3 gap-4">
                                                 <div className="flex items-center gap-2.5 min-w-0">
                                                     <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                                                    <span className="text-sm font-medium truncate">{PORTAL_SECTION_LABELS[key]}</span>
+                                                    <span className="text-sm font-medium truncate">{label}</span>
                                                 </div>
                                                 {/* Visibility selector */}
                                                 <div className="relative group/vis shrink-0">

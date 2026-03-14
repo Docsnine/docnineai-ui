@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo } from "react"
+import { lazy, Suspense, useEffect, useMemo, useState } from "react"
 import {
   BrowserRouter as Router,
   Routes,
@@ -9,14 +9,18 @@ import {
   matchPath,
 } from "react-router-dom"
 import { useAuthStore } from "@/store/auth"
-import { ThemeProvider } from "@/components/theme-provider"
+import { useSessionStore } from "@/store/session"
+import { ThemeProvider } from "@/providers/theme-provider"
 import { getSiteUrl, type SeoConfig, useSeo } from "@/lib/seo"
-import ApplicationLogo from "./components/logo"
+import { SessionExpiredDialog } from "@/components/dialogs/SessionExpiredDialog"
+import ApplicationLogo from "./components/application-logo"
 import Loader1 from "./components/ui/loader1"
+import { GuestLayout } from "./layout/guest"
+import { AuthLayout } from "./layout/auth"
 
 // ─── Lazy-loaded pages ────────────────────────────────────────────
 
-const LandingPage = lazy(() => import("@/pages/landing").then(m => ({ default: m.LandingPage })))
+const LandingPage = lazy(() => import("@/pages/Home").then(m => ({ default: m.HomePage })))
 const LoginPage = lazy(() => import("@/pages/auth/login").then(m => ({ default: m.LoginPage })))
 const SignupPage = lazy(() => import("@/pages/auth/signup").then(m => ({ default: m.SignupPage })))
 const VerifyPage = lazy(() => import("@/pages/auth/verify").then(m => ({ default: m.VerifyPage })))
@@ -26,18 +30,21 @@ const AuthCallbackPage = lazy(() => import("@/pages/auth/callback").then(m => ({
 const CliAuthPage = lazy(() => import("@/pages/auth/cli-auth").then(m => ({ default: m.CliAuthPage })))
 const AcceptInvitePage = lazy(() => import("@/pages/auth/accept-invite").then(m => ({ default: m.AcceptInvitePage })))
 const GithubOAuthCompletePage = lazy(() => import("@/components/projects/github-oauth-complete").then(m => ({ default: m.GithubOAuthCompletePage })))
+const GitlabOAuthCompletePage = lazy(() => import("@/components/projects/gitlab-oauth-complete").then(m => ({ default: m.GitlabOAuthCompletePage })))
+const BitbucketOAuthCompletePage = lazy(() => import("@/components/projects/bitbucket-oauth-complete").then(m => ({ default: m.BitbucketOAuthCompletePage })))
+const AzureOAuthCompletePage = lazy(() => import("@/components/projects/azure-oauth-complete").then(m => ({ default: m.AzureOAuthCompletePage })))
 
-const DashboardLayout = lazy(() => import("@/components/layout/dashboard-layout").then(m => ({ default: m.DashboardLayout })))
-const DashboardPage = lazy(() => import("@/pages/dashboard").then(m => ({ default: m.DashboardPage })))
+const DashboardLayout = lazy(() => import("@/layout/dashboard").then(m => ({ default: m.DashboardLayout })))
+const DashboardPage = lazy(() => import("@/pages/dashboard/dashboard").then(m => ({ default: m.DashboardPage })))
 const ProjectOverviewPage = lazy(() => import("@/pages/projects/overview").then(m => ({ default: m.ProjectOverviewPage })))
 const LiveAnalysisPage = lazy(() => import("@/pages/projects/live-analysis").then(m => ({ default: m.LiveAnalysisPage })))
 const DocumentationViewerPage = lazy(() => import("@/pages/projects/documentation").then(m => ({ default: m.DocumentationViewerPage })))
-const DocumentationsPage = lazy(() => import("@/pages/documentations").then(m => ({ default: m.DocumentationsPage })))
-const LogsPage = lazy(() => import("@/pages/logs").then(m => ({ default: m.LogsPage })))
-const ProfilePage = lazy(() => import("@/pages/profile").then(m => ({ default: m.ProfilePage })))
-const SettingsPage = lazy(() => import("@/pages/settings").then(m => ({ default: m.SettingsPage })))
-const PricingPage = lazy(() => import("@/pages/pricing").then(m => ({ default: m.PricingPage })))
-const PlatformDocsPage = lazy(() => import("@/pages/docs").then(m => ({ default: m.PlatformDocsPage })))
+const DocumentationsPage = lazy(() => import("@/pages/dashboard/documentations").then(m => ({ default: m.DocumentationsPage })))
+const LogsPage = lazy(() => import("@/pages/dashboard/logs").then(m => ({ default: m.LogsPage })))
+const ProfilePage = lazy(() => import("@/pages/profile/profile").then(m => ({ default: m.ProfilePage })))
+const SettingsPage = lazy(() => import("@/pages/settings/settings").then(m => ({ default: m.SettingsPage })))
+const PricingPage = lazy(() => import("@/pages/guest/pricing").then(m => ({ default: m.PricingPage })))
+const PlatformDocsPage = lazy(() => import("@/pages/guest/docs").then(m => ({ default: m.PlatformDocsPage })))
 const PublicPortalPage = lazy(() => import("@/pages/docs/public-portal").then(m => ({ default: m.PublicPortalPage })))
 const SuperAdminPage = lazy(() => import("@/pages/admin/super-admin").then(m => ({ default: m.SuperAdminPage })))
 const TermsPage = lazy(() => import("@/pages/guest/terms").then(m => ({ default: m.TermsPage })))
@@ -137,7 +144,8 @@ function getRouteSeo(pathname: string): SeoConfig | null {
   // System / oauth pages — no indexing
   const SYSTEM_PATHS = [
     "/verify", "/auth/callback", "/cli-auth",
-    "/github/oauth/complete", "/forgot-password", "/reset-password",
+    "/github/oauth/complete", "/gitlab/oauth/complete", "/bitbucket/oauth/complete", "/azure/oauth/complete",
+    "/forgot-password", "/reset-password",
   ]
   if (
     SYSTEM_PATHS.includes(pathname) ||
@@ -154,9 +162,9 @@ function getRouteSeo(pathname: string): SeoConfig | null {
 
   const PUBLIC_PAGES: Record<string, SeoConfig> = {
     "/": {
-      title: "AI Documentation for Engineering Teams",
+      title: "Docnine -  AI Documentation for Engineering Teams",
       description:
-        "Docnine reads your codebase and instantly generates docs that stay in sync with every push — no writing, no maintenance, no stale README.",
+        "Ship better documentations, faster. Stop writing documentation by hand. Create and maintain developer documentation with AI. Docnine generates docs from your codebase, then keeps them up to date as your code evolves.",
       pathname: "/",
       keywords: MARKETING_KEYWORDS,
       appendSiteName: false,
@@ -180,7 +188,7 @@ function getRouteSeo(pathname: string): SeoConfig | null {
       },
     },
     "/login": {
-      title: "Sign In",
+      title: "Sign In To Your Account",
       description:
         "Sign in to Docnine to generate, publish, and maintain documentation for your codebase — automatically.",
       pathname: "/login",
@@ -319,9 +327,11 @@ function ScrollRestoration() {
 
 function AppRoutes() {
   const { initAuth, initialized } = useAuthStore()
+  const { sessionExpiredOpen, hideSessionExpired } = useSessionStore()
 
   useEffect(() => {
-    if (window.location.pathname === "/github/oauth/complete") {
+    const oauthPaths = ["/github/oauth/complete", "/gitlab/oauth/complete", "/bitbucket/oauth/complete", "/azure/oauth/complete"]
+    if (oauthPaths.includes(window.location.pathname)) {
       useAuthStore.setState({ initialized: true })
       return
     }
@@ -331,32 +341,45 @@ function AppRoutes() {
   if (!initialized) return <PageLoader />
 
   return (
-    <Suspense fallback={<PageLoader />}>
-      <Routes>
+    <>
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
 
-        {/* ── Landing ───────────────────────────────────────────── */}
-        <Route path="/" element={<LandingOnlyRoute><LandingPage /></LandingOnlyRoute>} />
+        {/* Guest layouts */}
+        <Route element={<GuestLayout />}>
+          {/* ── Landing ───────────────────────────────────────────── */}
+          <Route path="/" element={<LandingOnlyRoute><LandingPage /></LandingOnlyRoute>} />
 
-        {/* ── Public marketing ─────────────────────────────────── */}
-        <Route path="/pricing" element={<PricingPage />} />
-        <Route path="/docs" element={<PlatformDocsPage />} />
-        <Route path="/contact" element={<ContactPage />} />
-        <Route path="/terms" element={<TermsPage />} />
-        <Route path="/privacy" element={<PrivacyPage />} />
+          {/* ── Public marketing ─────────────────────────────────── */}
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/docs" element={<PlatformDocsPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/terms" element={<TermsPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+        </Route>
+
+        {/* Guest layouts */}
+        <Route element={<AuthLayout />}>
+          {/* ── Auth — open to everyone, including logged-in users ── */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/verify" element={<VerifyPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+        </Route>
+
 
         {/* ── Public documentation portal ───────────────────────── */}
         <Route path="/docs/:slug" element={<PublicPortalPage />} />
 
-        {/* ── Auth — open to everyone, including logged-in users ── */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        <Route path="/verify" element={<VerifyPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        {/* ── OAuth callbacks ───────────────────────────────────── */}
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route path="/cli-auth" element={<CliAuthPage />} />
         <Route path="/share/accept/:token" element={<AcceptInvitePage />} />
         <Route path="/github/oauth/complete" element={<GithubOAuthCompletePage />} />
+        <Route path="/gitlab/oauth/complete" element={<GitlabOAuthCompletePage />} />
+        <Route path="/bitbucket/oauth/complete" element={<BitbucketOAuthCompletePage />} />
+        <Route path="/azure/oauth/complete" element={<AzureOAuthCompletePage />} />
 
         {/* ── Protected workspace ───────────────────────────────── */}
         <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
@@ -377,7 +400,10 @@ function AppRoutes() {
         <Route path="*" element={<Navigate to="/" replace />} />
 
       </Routes>
-    </Suspense>
+      </Suspense>
+
+      <SessionExpiredDialog open={sessionExpiredOpen} onOpenChange={hideSessionExpired} />
+    </>
   )
 }
 
