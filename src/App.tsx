@@ -29,6 +29,10 @@ const ResetPasswordPage = lazy(() => import("@/pages/auth/reset-password").then(
 const AuthCallbackPage = lazy(() => import("@/pages/auth/callback").then(m => ({ default: m.AuthCallbackPage })))
 const CliAuthPage = lazy(() => import("@/pages/auth/cli-auth").then(m => ({ default: m.CliAuthPage })))
 const AcceptInvitePage = lazy(() => import("@/pages/auth/accept-invite").then(m => ({ default: m.AcceptInvitePage })))
+const GithubOAuthPage = lazy(() => import("@/pages/auth/github-oauth").then(m => ({ default: m.GithubOAuthPage })))
+const GitlabOAuthPage = lazy(() => import("@/pages/auth/gitlab-oauth").then(m => ({ default: m.GitlabOAuthPage })))
+const BitbucketOAuthPage = lazy(() => import("@/pages/auth/bitbucket-oauth").then(m => ({ default: m.BitbucketOAuthPage })))
+const AzureOAuthPage = lazy(() => import("@/pages/auth/azure-oauth").then(m => ({ default: m.AzureOAuthPage })))
 const GithubOAuthCompletePage = lazy(() => import("@/components/projects/github-oauth-complete").then(m => ({ default: m.GithubOAuthCompletePage })))
 const GitlabOAuthCompletePage = lazy(() => import("@/components/projects/gitlab-oauth-complete").then(m => ({ default: m.GitlabOAuthCompletePage })))
 const BitbucketOAuthCompletePage = lazy(() => import("@/components/projects/bitbucket-oauth-complete").then(m => ({ default: m.BitbucketOAuthCompletePage })))
@@ -144,6 +148,7 @@ function getRouteSeo(pathname: string): SeoConfig | null {
   // System / oauth pages — no indexing
   const SYSTEM_PATHS = [
     "/verify", "/auth/callback", "/cli-auth",
+    "/auth/github", "/auth/gitlab", "/auth/bitbucket", "/auth/azure",
     "/github/oauth/complete", "/gitlab/oauth/complete", "/bitbucket/oauth/complete", "/azure/oauth/complete",
     "/forgot-password", "/reset-password",
   ]
@@ -330,7 +335,10 @@ function AppRoutes() {
   const { sessionExpiredOpen, hideSessionExpired } = useSessionStore()
 
   useEffect(() => {
-    const oauthPaths = ["/github/oauth/complete", "/gitlab/oauth/complete", "/bitbucket/oauth/complete", "/azure/oauth/complete"]
+    const oauthPaths = [
+      "/auth/github", "/auth/gitlab", "/auth/bitbucket", "/auth/azure",
+      "/github/oauth/complete", "/gitlab/oauth/complete", "/bitbucket/oauth/complete", "/azure/oauth/complete"
+    ]
     if (oauthPaths.includes(window.location.pathname)) {
       useAuthStore.setState({ initialized: true })
       return
@@ -345,61 +353,69 @@ function AppRoutes() {
       <Suspense fallback={<PageLoader />}>
         <Routes>
 
-        {/* Guest layouts */}
-        <Route element={<GuestLayout />}>
-          {/* ── Landing ───────────────────────────────────────────── */}
-          <Route path="/" element={<LandingOnlyRoute><LandingPage /></LandingOnlyRoute>} />
+          {/* Guest layouts */}
+          <Route element={<GuestLayout />}>
+            {/* ── Landing ───────────────────────────────────────────── */}
+            <Route path="/" element={<LandingOnlyRoute><LandingPage /></LandingOnlyRoute>} />
 
-          {/* ── Public marketing ─────────────────────────────────── */}
-          <Route path="/pricing" element={<PricingPage />} />
-          <Route path="/docs" element={<PlatformDocsPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/terms" element={<TermsPage />} />
-          <Route path="/privacy" element={<PrivacyPage />} />
-        </Route>
+            {/* ── Public marketing ─────────────────────────────────── */}
+            <Route path="/pricing" element={<PricingPage />} />
+            <Route path="/docs" element={<PlatformDocsPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+          </Route>
 
-        {/* Guest layouts */}
-        <Route element={<AuthLayout />}>
-          {/* ── Auth — open to everyone, including logged-in users ── */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-          <Route path="/verify" element={<VerifyPage />} />
-          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="/reset-password" element={<ResetPasswordPage />} />
-        </Route>
+          {/* Guest layouts */}
+          <Route element={<AuthLayout />}>
+            {/* ── Auth — open to everyone, including logged-in users ── */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/verify" element={<VerifyPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+          </Route>
 
 
-        {/* ── Public documentation portal ───────────────────────── */}
-        <Route path="/docs/:slug" element={<PublicPortalPage />} />
+          {/* ── Public documentation portal ───────────────────────── */}
+          <Route path="/docs/:slug" element={<PublicPortalPage />} />
 
-        {/* ── OAuth callbacks ───────────────────────────────────── */}
-        <Route path="/auth/callback" element={<AuthCallbackPage />} />
-        <Route path="/cli-auth" element={<CliAuthPage />} />
-        <Route path="/share/accept/:token" element={<AcceptInvitePage />} />
-        <Route path="/github/oauth/complete" element={<GithubOAuthCompletePage />} />
-        <Route path="/gitlab/oauth/complete" element={<GitlabOAuthCompletePage />} />
-        <Route path="/bitbucket/oauth/complete" element={<BitbucketOAuthCompletePage />} />
-        <Route path="/azure/oauth/complete" element={<AzureOAuthCompletePage />} />
+          {/* ── OAuth callbacks ───────────────────────────────────── */}
+          <Route path="/auth/callback" element={<AuthCallbackPage />} />
+          <Route path="/cli-auth" element={<CliAuthPage />} />
+          <Route path="/share/accept/:token" element={<AcceptInvitePage />} />
 
-        {/* ── Protected workspace ───────────────────────────────── */}
-        <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-          <Route path="dashboard" element={<Navigate to="/projects" replace />} />
-          <Route path="projects" element={<DashboardPage />} />
-          <Route path="projects/:id" element={<ProjectOverviewPage />} />
-          <Route path="projects/:id/live" element={<LiveAnalysisPage />} />
-          <Route path="projects/:id/docs" element={<DocumentationViewerPage />} />
-          <Route path="documentations" element={<DocumentationsPage />} />
-          <Route path="logs" element={<LogsPage />} />
-          <Route path="profile" element={<ProfilePage />} />
-          <Route path="settings" element={<SettingsPage />} />
-          <Route path="billing" element={<BillingRedirect />} />
-          <Route path="admin" element={<AdminRoute><SuperAdminPage /></AdminRoute>} />
-        </Route>
+          {/* ── Repository OAuth initiators ───────────────────────── */}
+          <Route path="/auth/github" element={<GithubOAuthPage />} />
+          <Route path="/auth/gitlab" element={<GitlabOAuthPage />} />
+          <Route path="/auth/bitbucket" element={<BitbucketOAuthPage />} />
+          <Route path="/auth/azure" element={<AzureOAuthPage />} />
 
-        {/* ── Fallback ──────────────────────────────────────────── */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+          {/* ── Repository OAuth completion pages ─────────────────── */}
+          <Route path="/github/oauth/complete" element={<GithubOAuthCompletePage />} />
+          <Route path="/gitlab/oauth/complete" element={<GitlabOAuthCompletePage />} />
+          <Route path="/bitbucket/oauth/complete" element={<BitbucketOAuthCompletePage />} />
+          <Route path="/azure/oauth/complete" element={<AzureOAuthCompletePage />} />
 
-      </Routes>
+          {/* ── Protected workspace ───────────────────────────────── */}
+          <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+            <Route path="dashboard" element={<Navigate to="/projects" replace />} />
+            <Route path="projects" element={<DashboardPage />} />
+            <Route path="projects/:id" element={<ProjectOverviewPage />} />
+            <Route path="projects/:id/live" element={<LiveAnalysisPage />} />
+            <Route path="projects/:id/docs" element={<DocumentationViewerPage />} />
+            <Route path="documentations" element={<DocumentationsPage />} />
+            <Route path="logs" element={<LogsPage />} />
+            <Route path="profile" element={<ProfilePage />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="billing" element={<BillingRedirect />} />
+            <Route path="admin" element={<AdminRoute><SuperAdminPage /></AdminRoute>} />
+          </Route>
+
+          {/* ── Fallback ──────────────────────────────────────────── */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+
+        </Routes>
       </Suspense>
 
       <SessionExpiredDialog open={sessionExpiredOpen} onOpenChange={hideSessionExpired} />

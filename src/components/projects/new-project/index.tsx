@@ -133,36 +133,43 @@ export function NewProjectModal({ open, onOpenChange }: NewProjectModalProps) {
     // ── Provider OAuth Flow ────────────────────────────────────────────────
 
     const handleEnterProvider = async (provider: ProviderKey) => {
-        // Load GitHub orgs if needed
-        if (provider === "github" && githubOrgs.length === 0) {
-            loadGithubOrgs()
-        }
-
-        // Load initial repos
+        // Set step first
         setStep(provider)
         setApiError(null)
         resetRepos()
-        await loadRepos(provider, 1, provider === "github" ? githubSelectedOrg : undefined)
 
-        // For already-connected providers, initiate OAuth
-        // (For new connections, the user will click connect)
+        // Check if already connected
         if (providerStatus[provider]) {
+            // Load GitHub orgs if needed
+            if (provider === "github" && githubOrgs.length === 0) {
+                loadGithubOrgs()
+            }
+
+            // Already connected - load repos immediately
+            await loadRepos(provider, 1, provider === "github" ? githubSelectedOrg : undefined)
             return
         }
 
         // Not connected yet - open OAuth window
         setIsConnecting(true)
+        
         try {
             await ProviderOAuthService.openOAuthWindow(
                 provider,
-                (status, user, msg) => {
+                async (status, user, msg) => {
                     if (status === "success") {
                         setProviderStatus((prev) => ({ ...prev, [provider]: true }))
                         if (user) {
                             setProviderUsernames((prev) => ({ ...prev, [provider]: user }))
                         }
-                        // Reload repos after connection
-                        loadRepos(
+                        
+                        // Load GitHub orgs if needed
+                        if (provider === "github" && githubOrgs.length === 0) {
+                            loadGithubOrgs()
+                        }
+                        
+                        // Reload repos after successful connection
+                        await loadRepos(
                             provider,
                             1,
                             provider === "github" ? githubSelectedOrg : undefined,

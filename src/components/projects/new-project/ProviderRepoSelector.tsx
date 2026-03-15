@@ -34,6 +34,23 @@ export function ProviderRepoSelector({
 }: ProviderRepoSelectorProps) {
     const config = PROVIDER_CONFIG[provider]
 
+    // Show connecting message when OAuth is in progress
+    if (isConnecting && repos.length === 0) {
+        return (
+            <div className="grid gap-4 py-8">
+                <div className="flex flex-col items-center justify-center gap-4 text-center">
+                    <Loader1 className="h-8 w-8 text-primary" />
+                    <div>
+                        <p className="text-sm font-medium">Connecting to {config.label}...</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                            Please complete the authorization in the popup window
+                        </p>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="grid gap-4 py-4">
             {/* GitHub org picker */}

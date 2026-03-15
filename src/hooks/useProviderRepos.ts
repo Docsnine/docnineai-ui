@@ -58,8 +58,14 @@ export function useProviderRepos() {
                     hasNext: data.hasNextPage,
                 }))
             }
-        } catch (err) {
-            setApiError(`Failed to load ${provider} repositories.`)
+        } catch (err: any) {
+            // Don't show error if provider is not connected - this is expected
+            if (err?.code !== "GITHUB_NOT_CONNECTED" && 
+                err?.code !== "GITLAB_NOT_CONNECTED" && 
+                err?.code !== "BITBUCKET_NOT_CONNECTED" &&
+                err?.code !== "AZURE_NOT_CONNECTED") {
+                setApiError(`Failed to load ${provider} repositories.`)
+            }
         } finally {
             setReposState((prev) => ({ ...prev, loading: false }))
         }
