@@ -44,7 +44,7 @@ export function SignupPage() {
     setIsLoading(true)
     setError(null)
     try {
-      await authApi.signup({ name: data.name, email: data.email, password: data.password })
+      await authApi.signup({ name: data.name, email: data.email, password: data.password, agreeToTerms: data.agreeToTerms })
       navigate("/verify")
     } catch (err) {
       if (err instanceof ApiException) {

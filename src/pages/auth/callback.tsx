@@ -67,6 +67,7 @@ export function AuthCallbackPage() {
   return (
     <div className="relative min-h-screen bg-background text-foreground flex flex-col items-center justify-center overflow-hidden font-sans">
       <BackgroundGrid />
+      
       <div className="absolute top-[40%] left-[50%] translate-x-[-50%] translate-y-[-50%] w-[40%] h-[30%] rounded-full bg-primary/20 blur-[100px] pointer-events-none z-0" />
 
       <div className="relative z-10 text-center space-y-4">
